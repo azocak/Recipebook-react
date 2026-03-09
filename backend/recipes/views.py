@@ -1,10 +1,8 @@
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
+from rest_framework import viewsets
 from .models import Recipe
-from .serializers import RecipeSerializers
+from .serializers import RecipeSerializer
 
-@api_view(['GET'])
-def recipe_list(request):
-  recipes = Recipe.objects.all()
-  serializer = RecipeSerializers(recipes, many = True)
-  return Response(serializer.data)
+
+class RecipeViewSet(viewsets.ModelViewSet):
+  recipes = Recipe.objects.all().order_by('-created_at')
+  serializer_class = RecipeSerializer
