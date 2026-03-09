@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-r4zdl&h!%ev4+$d(2@m22$4vb@v8sp54d0mrnux*tpq^+98-@=
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
 
 # Application definition
@@ -37,10 +37,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # Third-party
+    'rest_framework',
+    'corsheaders',
+
+    # Local apps
     'recipes',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -103,9 +110,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'hu-hu'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Budapest'
 
 USE_I18N = True
 
@@ -116,3 +123,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:5173',
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:5173',
+]
