@@ -1,0 +1,41 @@
+import { useEffect, useState } from "react";
+import type { Recipe } from "../api/types";
+import { getRecipes } from "../api/api";
+import RecipeCard from "../components/RecipeCard";
+
+function RecipesPage() {
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchRecipes() {
+      try {
+        const data = await getRecipes();
+        setRecipes(data);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchRecipes();
+  }, []);
+
+  if (loading) {
+    return <p className="text-center mt-10">Loading...</p>;
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto p-8">
+      <h1 className="text-3xl font-bold mb-6">Receptkönyv</h1>
+      <div className="grid md:grid-cols-2 gap-6">
+        {recipes.map((recipe) => (
+          <RecipeCard key={recipe.id} recipe={recipe} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default RecipesPage;
