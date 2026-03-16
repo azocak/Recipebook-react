@@ -16,8 +16,25 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from recipes.views import (
+  RecipeViewSet,
+  register_api,
+  login_api,
+  logout_api,
+  me_api,
+  )
+
+router = DefaultRouter()
+router.register(r"recipes", RecipeViewSet, basename="recipe")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('recipes.urls')),
+    path('api/', include(router.urls)),
+
+    # Auth API
+    path("api/auth/register", register_api, name="api_register"),
+    path("api/auth/login", login_api, name="api_login"),
+    path("api/auth/logout", logout_api, name="api_logout"),
+    path("api/auth/me", me_api, name="api_me"),
 ]
