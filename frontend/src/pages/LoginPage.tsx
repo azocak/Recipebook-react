@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   NavLink,
   useLocation,
@@ -12,7 +12,7 @@ interface LoginLocationState {
 }
 
 export function LoginPage() {
-  const { user, login, loading } = useAuth();
+  const { login, loading } = useAuth();
   const navigate = useNavigate();
 
   const location = useLocation() as Location & {
@@ -23,12 +23,6 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!loading && user) {
-      navigate("/recipes", { replace: true });
-    }
-  }, [loading, user, navigate]);
 
   const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();

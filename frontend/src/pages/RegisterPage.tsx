@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 export function RegisterPage() {
-  const { register, user, loading } = useAuth();
+  const { register, loading } = useAuth();
   const navigate = useNavigate();
 
   const [username, setUsername] = useState("");
@@ -12,12 +12,6 @@ export function RegisterPage() {
   const [confirmation, setConfirmation] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!loading && user) {
-      navigate("/recipes", { replace: true });
-    }
-  }, [loading, user, navigate]);
 
   const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
