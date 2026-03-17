@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
@@ -25,34 +26,46 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
 }
 
+type AuthProviderProps = {
+  children: ReactNode;
+};
+
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const refreshUser = useCallback(async () => {
+    const currentUser = await authApi.me();
+    setUser(currentUser);
+  }, []);
+
   useEffect(() => {
-    let cancelled = false;
-    async function init() {
+    let isMounted = true;
+
+    async function loadUser() {
       try {
-        const me = await authApi.me();
-        if (!cancelled) {
-          setUser(me);
+        const currentUser = await authApi.me();
+        if (!isMounted) {
+          setUser(currentUser);
         }
-      } catch {
-        if (!cancelled) {
+      } catch (error) {
+        if (isMounted) {
           setUser(null);
+          console.error("Failed to restore auth session:", error);
         }
       } finally {
-        if (!cancelled) {
+        if (isMounted) {
           setLoading(false);
         }
       }
     }
 
-    void init();
+    void loadUser();
+
     return () => {
-      cancelled = true;
+      isMounted = false;
     };
   }, []);
 
@@ -84,14 +97,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const value: AuthContextValue = {
-    user,
-    loading,
-    login,
-    logout,
-    register,
-    isAuthenticated: !!user,
-  };
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user,
+      loading,
+      login,
+      logout,
+      register,
+      isAuthenticated: !!user,
+      refreshUser,
+    }),
+    [user, loading, login, logout, register, refreshUser],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
