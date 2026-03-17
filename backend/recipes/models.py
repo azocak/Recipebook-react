@@ -1,10 +1,13 @@
 from django.db import models
-from django.contrib.auth.models import User
-
+from django.conf import settings
 
 class Recipe(models.Model):
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="recipes",
+    )
     title = models.CharField(max_length=200)
-    description = models.TextField()
     ingredients = models.TextField()
     instructions = models.TextField()
     cooking_time = models.PositiveIntegerField(help_text="Percben")

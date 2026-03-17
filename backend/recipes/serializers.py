@@ -120,7 +120,19 @@ class LoginSerializer(serializers.Serializer):
         attrs["user"] = user
         return attrs
 class RecipeSerializer(serializers.ModelSerializer):
+  owner_username = serializers.CharField(source="owner.username", read_only=True)
 
   class Meta:
     model = Recipe
-    fields = '__all__'
+    fields = [
+        "id", 
+        "owner",
+        "owner_username",
+        "title",
+        "ingredients",
+        "instructions",
+        "cooking_time",
+        "servings",
+        "created_at",
+    ]
+    read_only_fields = ["id", "owner", "owner_username", "created_at"]

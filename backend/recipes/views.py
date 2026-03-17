@@ -5,7 +5,8 @@ from rest_framework.response import Response
 from .models import Recipe
 from .serializers import RecipeSerializer, UserSerializer, RegisterSerializer, LoginSerializer
 from django.contrib.auth import login, logout
-from django.views.decorators.csrf import csrf_exempt
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from .permissions import IsOwnerOrReadOnly
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -48,5 +49,12 @@ def me_api(request):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-  queryset = Recipe.objects.all().order_by("-created_at")
   serializer_class = RecipeSerializer
+  permission_classes = [IsAuthenticatedOrReadOnly,IsOwnerOrReadOnly]
+
+  def get_queryset(self):
+      return Recipe.objects.select_related("owner").order_by("-created_at")
+  
+  def perform_create(self, serializer):
+      serializer.save(owner=self.request.user)
+  
