@@ -7,13 +7,13 @@ type GuestOnlyRouteProps = {
 };
 
 export function GuestOnlyRoute({ children }: GuestOnlyRouteProps) {
-  const { user, loading } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
     return <p>Betöltés...</p>;
   }
 
-  if (user) {
+  if (isAuthenticated) {
     return <Navigate to="/recipes" replace />;
   }
 

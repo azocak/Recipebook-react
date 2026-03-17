@@ -15,7 +15,7 @@ export function mapApiErrors(
     return result;
   }
 
-  if (!(error.data || typeof error.data !== "object")) {
+  if (!error.data || typeof error.data !== "object") {
     return result;
   }
 

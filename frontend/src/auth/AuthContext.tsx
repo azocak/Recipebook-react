@@ -24,6 +24,7 @@ export interface AuthContextValue {
     confirmation: string,
   ) => Promise<void>;
   isAuthenticated: boolean;
+  refreshUser: () => Promise<void>;
 }
 
 type AuthProviderProps = {
@@ -47,7 +48,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     async function loadUser() {
       try {
         const currentUser = await authApi.me();
-        if (!isMounted) {
+        if (isMounted) {
           setUser(currentUser);
         }
       } catch (error) {
