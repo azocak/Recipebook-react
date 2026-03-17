@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Recipe } from "../api/types";
-import { getRecipes } from "../api/api";
+import { recipesApi } from "../api/recipes";
 import RecipeCard from "../components/RecipeCard";
 
 function RecipesPage() {
@@ -10,7 +10,7 @@ function RecipesPage() {
   useEffect(() => {
     async function fetchRecipes() {
       try {
-        const data = await getRecipes();
+        const data = await recipesApi.getAll();
         setRecipes(data);
       } catch (error) {
         console.error(error);

@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import type { User } from "../api/types";
-import { api } from "../api/api";
+import { authApi } from "../api/auth";
 
 export interface AuthContextValue {
   user: User | null;
@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     async function init() {
       try {
-        const me = await api.me();
+        const me = await authApi.me();
         if (!cancelled) {
           setUser(me);
         }
@@ -57,12 +57,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
-    const loggedInUser = await api.login({ username, password });
+    const loggedInUser = await authApi.login({ username, password });
     setUser(loggedInUser);
   }, []);
 
   const logout = useCallback(async () => {
-    await api.logout();
+    await authApi.logout();
     setUser(null);
   }, []);
 
@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: string,
       confirmation: string,
     ) => {
-      const newUser = await api.register({
+      const newUser = await authApi.register({
         username,
         email,
         password,
