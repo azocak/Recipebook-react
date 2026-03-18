@@ -2,8 +2,11 @@ import { useEffect, useState } from "react";
 import type { Recipe } from "../api/types";
 import { recipesApi } from "../api/recipes";
 import RecipeCard from "../components/RecipeCard";
+import { useAuth } from "../auth/AuthContext";
 
 function RecipesPage() {
+  const { isAuthenticated } = useAuth();
+
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -29,6 +32,7 @@ function RecipesPage() {
   return (
     <div className="max-w-5xl mx-auto p-8">
       <h1 className="text-3xl font-bold mb-6">Receptkönyv</h1>
+      {isAuthenticated && <button>Új recept</button>}
       <div className="grid md:grid-cols-2 gap-6">
         {recipes.map((recipe) => (
           <RecipeCard key={recipe.id} recipe={recipe} />
