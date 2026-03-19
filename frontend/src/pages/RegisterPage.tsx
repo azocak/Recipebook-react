@@ -25,7 +25,7 @@ export function RegisterPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<RegisterFormErrors>({});
 
-  const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (e) => {
+  const handleSubmit: React.SubmitEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
 
     const nextErrors: RegisterFormErrors = {};
@@ -83,8 +83,8 @@ export function RegisterPage() {
     >
       <form onSubmit={handleSubmit} noValidate>
         <FormField id="username" label="Felhasználónév" error={errors.username}>
-          <label htmlFor="username">Felhasználónév</label>
           <input
+            id="username"
             type="text"
             name="username"
             autoComplete="username"
@@ -94,8 +94,8 @@ export function RegisterPage() {
           />
         </FormField>
         <FormField id="email" label="Email" error={errors.email}>
-          <label htmlFor="email">Email</label>
           <input
+            id="email"
             type="email"
             name="email"
             autoComplete="email"
@@ -105,8 +105,8 @@ export function RegisterPage() {
           />
         </FormField>
         <FormField id="password" label="Jelszó" error={errors.password}>
-          <label htmlFor="password">Jelszó</label>
           <input
+            id="password"
             type="password"
             name="password"
             value={password}
@@ -119,8 +119,8 @@ export function RegisterPage() {
           label="Jelszó mégegyszer"
           error={errors.confirmation}
         >
-          <label htmlFor="confirmation">Jelszó mégegyszer</label>
           <input
+            id="confirmation"
             type="password"
             name="confirmation"
             value={confirmation}

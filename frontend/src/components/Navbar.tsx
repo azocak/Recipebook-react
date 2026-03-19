@@ -25,6 +25,7 @@ export function Navbar() {
 
           {user ? (
             <>
+              <NavLink to="/recipes/new">Új recept</NavLink>
               <span>
                 Hello, <span>{user.username}</span>
               </span>
