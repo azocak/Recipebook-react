@@ -122,6 +122,51 @@ class LoginSerializer(serializers.Serializer):
 class RecipeSerializer(serializers.ModelSerializer):
   owner_username = serializers.CharField(source="owner.username", read_only=True)
 
+  title = serializers.CharField(
+      max_length=120,
+      error_messages={
+          "blank": "A recept neve kötelező.",
+          "max_length": "A recept neve legfeljebb 120 karakter lehet.",
+          "required": "A recept neve kötelező.",
+      },
+  )
+
+  ingredients = serializers.CharField(
+      error_messages= {
+          "blank": "A hozzávalók mező kötelező.",
+          "required": "A hozzávalók mező kötelező.",
+      },
+  )
+
+  instructions = serializers.CharField(
+      error_messages={
+          "blank": "Az elkészítés mező kötelező.",
+          "required": "Az elkészítés mező kötelező.",
+        },
+    )
+  
+  cooking_time = serializers.IntegerField(
+      min_value=1,
+      max_value=1440,
+      error_messages={
+          "required": "A főzési idő kötelező.",
+          "invalid": "A főzési idő csak szám lehet.",
+          "min_value": "A főzési idő legalább 1 perc legyen.",
+          "max_value": "A főzési idő legfeljebb 1440 perc lehet.",
+        },
+  )
+
+  servings = serializers.IntegerField(
+      min_value=1,
+      max_value=20,
+      error_messages={
+          "required":  "Az adagok száma kötelező.",
+          "invalid": "Az adagok száma csak szám lehet.",
+          "min_value": "Az adagok száma legalább 1 legyen.",
+          "max_value": "Az adagok száma legfeljebb 50 lehet.",
+      },
+  )
+
   class Meta:
     model = Recipe
     fields = [
@@ -136,3 +181,45 @@ class RecipeSerializer(serializers.ModelSerializer):
         "created_at",
     ]
     read_only_fields = ["id", "owner", "owner_username", "created_at"]
+
+  def validate_title(self,value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("A recept neve nem lehet üres.")
+        
+        if len(value) < 3:
+            raise serializers.ValidationError("A recept neve legalább 3 karakter legyen.")
+        
+        return value
+
+  def validate_ingredients(self,value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("A hozzávalók mező nem lehet üres.")
+        
+        if len(value) < 10:
+            raise serializers.ValidationError("A hozzávalók mező legalább 10 karakter legyen.")
+        
+        return value
+
+  def validate_instructions(self,value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("Az elkészítés mező nem lehet üres.")
+        
+        if len(value) < 10:
+            raise serializers.ValidationError("Az elkészítés mező legalább 10 karakter legyen.")
+        
+        return value
+
+  def validate(self,attrs):
+        ingredients = attrs.get("ingredients", "").strip().lower()
+        instructions = attrs.get("instructions", "").strip().lower()
+
+        if ingredients == instructions and ingredients:
+            raise serializers.ValidationError({"instructions": "Az elkészítés nem lehet ugyanaz, mint a hozzávalók."})
+        
+        return attrs

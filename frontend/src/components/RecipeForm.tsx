@@ -1,6 +1,11 @@
 import { useState } from "react";
 import type { RecipeFormData } from "../api/types";
 import { RecipeFormField } from "./recipe/RecipeFormField";
+import { mapApiErrors } from "../utils/mapApiErrors";
+import {
+  validateRecipeForm,
+  type RecipeFormErrors,
+} from "../utils/validateRecipeForm";
 
 type RecipeFormProps = {
   initialValues: RecipeFormData;
@@ -14,7 +19,7 @@ export default function RecipeForm({
   submitLabel,
 }: RecipeFormProps) {
   const [formData, setFormData] = useState<RecipeFormData>(initialValues);
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<RecipeFormErrors>({});
   const [submitting, setSubmitting] = useState(false);
 
   function handleChange(
@@ -27,17 +32,37 @@ export default function RecipeForm({
       [name]:
         name === "cooking_time" || name === "servings" ? Number(value) : value,
     }));
+
+    setErrors((prev) => ({
+      ...prev,
+      [name]: undefined,
+      general: undefined,
+    }));
   }
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    setError("");
+
+    const clientErrors = validateRecipeForm(formData);
+
+    if (Object.keys(clientErrors).length > 0) {
+      setErrors(clientErrors);
+      return;
+    }
+
+    setErrors({});
     setSubmitting(true);
 
     try {
       await onSubmit(formData);
     } catch (error) {
-      setError("Nem sikerült menteni a receptet.");
+      setErrors(
+        mapApiErrors(
+          error,
+          ["title", "ingredients", "instructions", "cooking_time", "servings"],
+          "Nem sikerült menteni a receptet",
+        ) as RecipeFormErrors,
+      );
       console.error(error);
     } finally {
       setSubmitting(false);
@@ -45,7 +70,7 @@ export default function RecipeForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
       <RecipeFormField
         id="title"
         label="Recept neve"
@@ -54,6 +79,8 @@ export default function RecipeForm({
         value={formData.title}
         onChange={handleChange}
         required
+        maxLength={120}
+        error={errors.title}
       />
 
       <RecipeFormField
@@ -65,6 +92,7 @@ export default function RecipeForm({
         onChange={handleChange}
         required
         rows={6}
+        error={errors.ingredients}
       />
 
       <RecipeFormField
@@ -76,6 +104,7 @@ export default function RecipeForm({
         onChange={handleChange}
         required
         rows={8}
+        error={errors.instructions}
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -87,6 +116,9 @@ export default function RecipeForm({
           value={formData.cooking_time}
           onChange={handleChange}
           required
+          min={1}
+          max={1440}
+          error={errors.cooking_time}
         />
 
         <RecipeFormField
@@ -95,13 +127,17 @@ export default function RecipeForm({
           type="number"
           name="servings"
           min={1}
+          max={20}
           value={formData.servings}
           onChange={handleChange}
           required
+          error={errors.servings}
         />
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {errors.general && (
+        <p className="mt-1 text-sm text-red-600">{errors.general}</p>
+      )}
 
       <button
         type="submit"
