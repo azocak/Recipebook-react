@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import RecipesPage from "./RecipesPage";
 import { createAuthState } from "../test/auth-fixtures";
 import { mockRecipes } from "../test/recipe-fixtures";
+import { MemoryRouter } from "react-router-dom";
 
 const mockUseAuth = vi.fn();
 const mockGetAll = vi.fn();
@@ -21,20 +22,28 @@ describe("RecipesPage", () => {
     vi.clearAllMocks();
   });
 
+  function renderRecipesPage() {
+    return render(
+      <MemoryRouter>
+        <RecipesPage />
+      </MemoryRouter>,
+    );
+  }
+
   it("shows loading initially", () => {
     mockUseAuth.mockReturnValue(createAuthState());
     mockGetAll.mockReturnValue(new Promise(() => {}));
 
-    render(<RecipesPage />);
+    renderRecipesPage();
 
     expect(screen.getByText("Loading...")).toBeInTheDocument();
   });
 
   it("renders recipes after successful fetch", async () => {
     mockUseAuth.mockReturnValue(createAuthState());
-    mockGetAll.mockReturnValue(mockRecipes);
+    mockGetAll.mockResolvedValue(mockRecipes);
 
-    render(<RecipesPage />);
+    renderRecipesPage();
 
     expect(await screen.findByText("Palacsinta")).toBeInTheDocument();
     expect(screen.getByText("Gulyásleves")).toBeInTheDocument();
@@ -48,18 +57,18 @@ describe("RecipesPage", () => {
         isAuthenticated: true,
       }),
     );
-    mockGetAll.mockReturnValue(mockRecipes);
+    mockGetAll.mockResolvedValue(mockRecipes);
 
-    render(<RecipesPage />);
+    renderRecipesPage();
 
     expect(await screen.findByText("Új recept")).toBeInTheDocument();
   });
 
   it("does not show the new recipe button for guests", async () => {
     mockUseAuth.mockReturnValue(createAuthState());
-    mockGetAll.mockReturnValue(mockRecipes);
+    mockGetAll.mockResolvedValue(mockRecipes);
 
-    render(<RecipesPage />);
+    renderRecipesPage();
 
     expect(await screen.findByText("Palacsinta")).toBeInTheDocument();
     expect(screen.queryByText("Új recept")).not.toBeInTheDocument();

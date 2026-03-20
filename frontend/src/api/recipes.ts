@@ -14,7 +14,7 @@ export const recipesApi = {
   },
 
   getById(id: number) {
-    return request<Recipe>(`/recipes/${id}`, "GET");
+    return request<Recipe>(`/recipes/${id}/`, "GET");
   },
 
   create(data: RecipeFormData) {
@@ -22,10 +22,10 @@ export const recipesApi = {
   },
 
   update(id: number, data: RecipeFormData) {
-    return request<Recipe>(`/recipes/${id}`, "PUT", data);
+    return request<Recipe>(`/recipes/${id}/`, "PUT", data);
   },
 
   remove(id: number) {
-    return request<void>(`/recipes/${id}`, "DELETE");
+    return request<void>(`/recipes/${id}/`, "DELETE");
   },
 };

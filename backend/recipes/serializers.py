@@ -163,7 +163,7 @@ class RecipeSerializer(serializers.ModelSerializer):
           "required":  "Az adagok száma kötelező.",
           "invalid": "Az adagok száma csak szám lehet.",
           "min_value": "Az adagok száma legalább 1 legyen.",
-          "max_value": "Az adagok száma legfeljebb 50 lehet.",
+          "max_value": "Az adagok száma legfeljebb 20 lehet.",
       },
   )
 
@@ -186,7 +186,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         value = value.strip()
 
         if not value:
-            raise serializers.ValidationError("A recept neve nem lehet üres.")
+            raise serializers.ValidationError("A recept neve kötelező.")
         
         if len(value) < 3:
             raise serializers.ValidationError("A recept neve legalább 3 karakter legyen.")
@@ -197,7 +197,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         value = value.strip()
 
         if not value:
-            raise serializers.ValidationError("A hozzávalók mező nem lehet üres.")
+            raise serializers.ValidationError("A hozzávalók mező kötelező.")
         
         if len(value) < 10:
             raise serializers.ValidationError("A hozzávalók mező legalább 10 karakter legyen.")
@@ -208,7 +208,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         value = value.strip()
 
         if not value:
-            raise serializers.ValidationError("Az elkészítés mező nem lehet üres.")
+            raise serializers.ValidationError("Az elkészítés mező kötelező.")
         
         if len(value) < 10:
             raise serializers.ValidationError("Az elkészítés mező legalább 10 karakter legyen.")
@@ -221,5 +221,22 @@ class RecipeSerializer(serializers.ModelSerializer):
 
         if ingredients == instructions and ingredients:
             raise serializers.ValidationError({"instructions": "Az elkészítés nem lehet ugyanaz, mint a hozzávalók."})
+
+        request = self.context.get("request")
+        title = attrs.get("title","").strip()
+
+        if request and request.user and request.user.is_authenticated and title:
+            queryset = Recipe.objects.filter(
+                owner=request.user,
+                title__iexact=title,
+            )
+
+            if self.instance is not None:
+                queryset = queryset.exclude(pk=self.instance.pk)
+
+            if queryset.exists():
+                raise serializers.ValidationError({
+                    "title": "Már van ilyen nevű recepted."
+                })
         
         return attrs

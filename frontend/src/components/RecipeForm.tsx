@@ -40,10 +40,21 @@ export default function RecipeForm({
     }));
   }
 
+  function normalizedRecipeFormData(data: RecipeFormData): RecipeFormData {
+    return {
+      title: data.title.trim(),
+      ingredients: data.ingredients.trim(),
+      instructions: data.instructions.trim(),
+      cooking_time: data.cooking_time,
+      servings: data.servings,
+    };
+  }
+
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    const clientErrors = validateRecipeForm(formData);
+    const normalizedData = normalizedRecipeFormData(formData);
+    const clientErrors = validateRecipeForm(normalizedData);
 
     if (Object.keys(clientErrors).length > 0) {
       setErrors(clientErrors);
@@ -54,7 +65,7 @@ export default function RecipeForm({
     setSubmitting(true);
 
     try {
-      await onSubmit(formData);
+      await onSubmit(normalizedData);
     } catch (error) {
       setErrors(
         mapApiErrors(

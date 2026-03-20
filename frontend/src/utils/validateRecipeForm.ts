@@ -39,7 +39,7 @@ export function validateRecipeForm(data: RecipeFormData): RecipeFormErrors {
 
   if (!Number.isInteger(data.servings) || data.servings < 1) {
     errors.servings = "Az adagok száma legalább 1 legyen.";
-  } else if (data.servings > 50) {
+  } else if (data.servings > 20) {
     errors.servings = "Az adagok száma legfeljebb 50 lehet.";
   }
 
