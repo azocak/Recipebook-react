@@ -7,6 +7,7 @@ import { AppLayout } from "../components/AppLayout.tsx";
 import { GuestOnlyRoute } from "../auth/GuestOnlyRoute.tsx";
 import { ProtectedRoute } from "../auth/ProtectedRoute.tsx";
 import NewRecipePage from "../pages/NewRecipePage.tsx";
+import RecipeDetailPage from "../pages/RecipeDetailPage.tsx";
 
 export function AppRouter() {
   return (
@@ -22,6 +23,7 @@ export function AppRouter() {
           }
         />
         <Route path="/recipes" element={<RecipesPage />} />
+        <Route path="/recipes/:id" element={<RecipeDetailPage />} />
         <Route
           path="/login"
           element={

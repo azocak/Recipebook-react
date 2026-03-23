@@ -2,7 +2,7 @@ import { ApiError } from "../api/errors";
 
 type FormErrors = Record<string, string | undefined>;
 
-export function mapApiErrors(
+export function mapApiErrorsToFormErrors(
   error: unknown,
   allowedFields: string[],
   fallbackMessage: string,

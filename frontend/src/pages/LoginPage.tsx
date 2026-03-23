@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
-import { mapApiErrors } from "../utils/mapApiErrors";
+import { mapApiErrorsToFormErrors } from "../utils/mapApiErrorsToFormErrors";
 import { AuthLayout } from "../components/auth/AuthLayout";
 import { FormField } from "../components/auth/Formfield";
 
@@ -56,7 +56,7 @@ export function LoginPage() {
       navigate(from, { replace: true });
     } catch (error) {
       setErrors(
-        mapApiErrors(
+        mapApiErrorsToFormErrors(
           error,
           ["username", "password"],
           "A bejelentkezés sikertelen.",

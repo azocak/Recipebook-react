@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { NavLink, useNavigate } from "react-router-dom";
 
-import { mapApiErrors } from "../utils/mapApiErrors";
+import { mapApiErrorsToFormErrors } from "../utils/mapApiErrorsToFormErrors";
 import { AuthLayout } from "../components/auth/AuthLayout";
 import { FormField } from "../components/auth/Formfield";
 
@@ -60,7 +60,7 @@ export function RegisterPage() {
       navigate("/recipes", { replace: true });
     } catch (error) {
       setErrors(
-        mapApiErrors(
+        mapApiErrorsToFormErrors(
           error,
           ["username", "email", "password", "confirmation"],
           "A regisztráció sikertelen.",

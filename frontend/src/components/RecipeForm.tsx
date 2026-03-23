@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { RecipeFormData } from "../api/types";
 import { RecipeFormField } from "./recipe/RecipeFormField";
-import { mapApiErrors } from "../utils/mapApiErrors";
+import { mapApiErrorsToFormErrors } from "../utils/mapApiErrorsToFormErrors";
 import {
   validateRecipeForm,
   type RecipeFormErrors,
@@ -68,7 +68,7 @@ export default function RecipeForm({
       await onSubmit(normalizedData);
     } catch (error) {
       setErrors(
-        mapApiErrors(
+        mapApiErrorsToFormErrors(
           error,
           ["title", "ingredients", "instructions", "cooking_time", "servings"],
           "Nem sikerült menteni a receptet",
