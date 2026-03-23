@@ -11,6 +11,36 @@ export function validateRecipeForm(data: RecipeFormData): RecipeFormErrors {
   const ingredients = data.ingredients.trim();
   const instructions = data.instructions.trim();
 
+  function validateTextarea(
+    key: keyof RecipeFormData,
+    value: string,
+    fieldHun: string,
+    min: number,
+  ) {
+    if (!value) {
+      errors[key] = `A ${fieldHun} mező kötelező.`;
+    } else if (value.length < min) {
+      errors[key] = `A ${fieldHun} mező legalább ${min} karakter legyen.`;
+    }
+  }
+
+  function validateNumberInput(
+    key: keyof RecipeFormData,
+    value: number,
+    fieldHun: string,
+    min: number,
+    max: number,
+    unit = "",
+  ) {
+    const suffix = unit ? ` ${unit}` : "";
+
+    if (!Number.isInteger(value) || value < min) {
+      errors[key] = `A ${fieldHun} legalább ${min}${suffix} legyen.`;
+    } else if (value > max) {
+      errors[key] = `A ${fieldHun} legfeljebb ${max}${suffix} lehet.`;
+    }
+  }
+
   if (!title) {
     errors.title = "A recept neve kötelező.";
   } else if (title.length < 3) {
@@ -19,29 +49,17 @@ export function validateRecipeForm(data: RecipeFormData): RecipeFormErrors {
     errors.title = "A recept neve legfeljebb 120 karakter lehet.";
   }
 
-  if (!ingredients) {
-    errors.ingredients = "A hozzávalók mező kötelező.";
-  } else if (ingredients.length < 10) {
-    errors.ingredients = "A hozzávalók mező legalább 10 karakter legyen.";
-  }
-
-  if (!instructions) {
-    errors.instructions = "Az elkészítés mező kötelező.";
-  } else if (instructions.length < 10) {
-    errors.instructions = "Az elkészítés mező legalább 10 karakter legyen.";
-  }
-
-  if (!Number.isInteger(data.cooking_time) || data.cooking_time < 1) {
-    errors.cooking_time = "A főzési idő legalább 1 perc legyen.";
-  } else if (data.cooking_time > 1440) {
-    errors.cooking_time = "A főzési idő legfeljebb 1440 perc lehet.";
-  }
-
-  if (!Number.isInteger(data.servings) || data.servings < 1) {
-    errors.servings = "Az adagok száma legalább 1 legyen.";
-  } else if (data.servings > 20) {
-    errors.servings = "Az adagok száma legfeljebb 50 lehet.";
-  }
+  validateTextarea("ingredients", ingredients, "hozzávalók", 10);
+  validateTextarea("instructions", instructions, "elkészítés", 10);
+  validateNumberInput(
+    "cooking_time",
+    data.cooking_time,
+    "főzési idő",
+    1,
+    1440,
+    "perc",
+  );
+  validateNumberInput("servings", data.servings, "adagok száma", 1, 20);
 
   if (
     ingredients &&
