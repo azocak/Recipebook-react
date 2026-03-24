@@ -1,64 +1,29 @@
-import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import type { Recipe } from "../api/types";
-import { recipesApi } from "../api/recipes";
-import { getApiErrorMessage } from "../utils/getApiErrorMessage";
+
+import { useRecipe } from "../hooks/useRecipe";
+import { Loading } from "../components/Loading";
+import { PageState } from "../components/PageState";
 
 export default function RecipeDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [recipe, setRecipe] = useState<Recipe | null>(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchRecipe() {
-      if (!id || Number.isNaN(Number(id))) {
-        setError("Érvénytelen azonosító.");
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setError("");
-        const data = await recipesApi.getById(Number(id));
-        setRecipe(data);
-      } catch (err) {
-        console.error(err);
-        setError(getApiErrorMessage(err, "Nem sikerült betölteni a receptet."));
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    void fetchRecipe();
-  }, [id]);
+  const { recipe, error, loading } = useRecipe(id);
 
   if (loading) {
-    return <p className="mt-10 text-center">Betöltés...</p>;
+    return <Loading />;
   }
 
-  if (error || !recipe) {
-    return (
-      <section className="mx-auto max-w-3xl space-y-4">
-        <p className={error ? "text-red-600" : ""}>
-          {error || "Nincs ilyen recept."}
-        </p>
-        <button
-          type="button"
-          onClick={() => navigate("/recipes")}
-          className="cursor-pointer rounded bg-orange-600 px-4 py-2 text-white"
-        >
-          Vissza a receptekhez
-        </button>
-      </section>
-    );
+  if (error) {
+    return <PageState message={error} tone="error" />;
+  }
+  if (!recipe) {
+    return <PageState message="Nincs ilyen recept." />;
   }
 
-  const isOwner = !!user && user.id === recipe?.owner;
+  const isOwner = !!user && user.id === recipe.owner;
 
   return (
     <section className="mx-auto max-w-3xl space-y-6 rounded-xl bg-white p-6 shadow">

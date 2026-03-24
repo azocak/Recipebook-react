@@ -8,12 +8,16 @@ import { GuestOnlyRoute } from "../auth/GuestOnlyRoute.tsx";
 import { ProtectedRoute } from "../auth/ProtectedRoute.tsx";
 import NewRecipePage from "../pages/NewRecipePage.tsx";
 import RecipeDetailPage from "../pages/RecipeDetailPage.tsx";
+import EditRecipePage from "../pages/EditRecipePage.tsx";
 
 export function AppRouter() {
   return (
     <AppLayout>
       <Routes>
         <Route path="/" element={<Navigate to="/recipes" replace />} />
+
+        <Route path="/recipes" element={<RecipesPage />} />
+        <Route path="/recipes/:id" element={<RecipeDetailPage />} />
         <Route
           path="/recipes/new"
           element={
@@ -22,8 +26,14 @@ export function AppRouter() {
             </ProtectedRoute>
           }
         />
-        <Route path="/recipes" element={<RecipesPage />} />
-        <Route path="/recipes/:id" element={<RecipeDetailPage />} />
+        <Route
+          path="/recipes/:id/edit"
+          element={
+            <ProtectedRoute>
+              <EditRecipePage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/login"
           element={
