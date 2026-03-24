@@ -2,14 +2,17 @@ import { useNavigate } from "react-router-dom";
 import type { Recipe } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import type { MouseEvent } from "react";
+import { useDeleteRecipe } from "../hooks/useDeleteRecipe";
 
 interface RecipeCardProps {
   recipe: Recipe;
+  onDeleteSuccess?: (deletedRecipeId: number) => void;
 }
 
-function RecipeCard({ recipe }: RecipeCardProps) {
+function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { deleteRecipe } = useDeleteRecipe();
   const isOwner = !!user && recipe.owner === user.id;
 
   function handleCardClick() {
@@ -21,17 +24,34 @@ function RecipeCard({ recipe }: RecipeCardProps) {
     navigate(`/recipes/${recipe.id}/edit`);
   };
 
-  const handleDeleteButton = (e: MouseEvent<HTMLButtonElement>) => {
+  async function handleDeleteButton(e: MouseEvent<HTMLButtonElement>) {
     e.stopPropagation();
-    console.log("delete later...");
-  };
+    const confirmed = window.confirm(
+      "Biztosan törölni szeretnéd ezt a receptet?",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await deleteRecipe(recipe.id);
+      if (onDeleteSuccess) {
+        onDeleteSuccess(recipe.id);
+      } else {
+        navigate("/recipes");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   return (
     <div
       onClick={handleCardClick}
       className="cursor-pointer rounded-xl bg-white p-6 shadow transition hover:shadow-lg"
     >
-      <h2 className="text-xl fot-bold text-orange-600">{recipe.title}</h2>
+      <h2 className="text-xl font-bold text-orange-600">{recipe.title}</h2>
       <div className="mt-4 flex gap-4 text-sm text-gray-500">
         <span>⏱ {recipe.cooking_time} perc</span>
         <span>🍽 {recipe.servings} adag</span>
