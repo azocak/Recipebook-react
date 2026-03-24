@@ -1,4 +1,6 @@
-/* eslint-disable react-refresh/only-export-components */
+{
+  /* eslint-disable react-refresh/only-export-components */
+}
 
 import {
   createContext,
@@ -9,8 +11,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { User } from "../api/types";
 import { authApi } from "../api/auth";
+import type { User } from "../api/types";
 
 export interface AuthContextValue {
   user: User | null;
@@ -37,38 +39,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refreshUser = useCallback(async () => {
-    const currentUser = await authApi.me();
-    setUser(currentUser);
+  const restoreSession = useCallback(async () => {
+    try {
+      const currentUser = await authApi.me();
+      setUser(currentUser);
+    } catch (error) {
+      setUser(null);
+      console.error("Failed to restore auth session:", error);
+    }
   }, []);
+
+  const refreshUser = useCallback(async () => {
+    setLoading(true);
+
+    try {
+      await restoreSession();
+    } finally {
+      setLoading(false);
+    }
+  }, [restoreSession]);
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function loadUser() {
-      try {
-        const currentUser = await authApi.me();
-        if (isMounted) {
-          setUser(currentUser);
-        }
-      } catch (error) {
-        if (isMounted) {
-          setUser(null);
-          console.error("Failed to restore auth session:", error);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadUser();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    void refreshUser();
+  }, [refreshUser]);
 
   const login = useCallback(async (username: string, password: string) => {
     const loggedInUser = await authApi.login({ username, password });
@@ -116,6 +109,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
+
   if (!ctx) {
     throw new Error("useAuth must be used within an AuthProvider");
   }

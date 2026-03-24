@@ -19,6 +19,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from recipes.views import (
   RecipeViewSet,
+  CsrfTokenView,
   register_api,
   login_api,
   logout_api,
@@ -32,6 +33,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
 
+    path("api/auth/csrf", CsrfTokenView.as_view(), name="auth-csrf"),
     # Auth API
     path("api/auth/register", register_api, name="api_register"),
     path("api/auth/login", login_api, name="api_login"),

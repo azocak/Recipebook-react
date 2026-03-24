@@ -1,12 +1,23 @@
-from rest_framework import viewsets, status
-from rest_framework.decorators import api_view, permission_classes, authentication_classes
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from .models import Recipe
-from .serializers import RecipeSerializer, UserSerializer, RegisterSerializer, LoginSerializer
 from django.contrib.auth import login, logout
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
+
+from rest_framework import status, viewsets
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .models import Recipe
 from .permissions import IsOwnerOrReadOnly
+from .serializers import LoginSerializer, RecipeSerializer, RegisterSerializer, UserSerializer
+
+@method_decorator(ensure_csrf_cookie, name="dispatch")
+class CsrfTokenView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({"detail": "CSRF cookie set."})
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
