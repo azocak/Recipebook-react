@@ -1,34 +1,37 @@
-import { useEffect, useState } from "react";
-import type { Recipe } from "../api/types";
-import { recipesApi } from "../api/recipes";
-import RecipeCard from "../components/RecipeCard";
-import { useAuth } from "../auth/AuthContext";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { recipesApi } from "../api/recipes";
+import type { Recipe } from "../api/types";
+import { useAuth } from "../auth/AuthContext";
+import { PageStatus } from "../components/PageStatus";
+import RecipeCard from "../components/RecipeCard";
 
 function RecipesPage() {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchRecipes() {
-      try {
-        const data = await recipesApi.getAll();
-        setRecipes(data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
+  const fetchRecipes = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await recipesApi.getAll();
+      setRecipes(data);
+    } catch (err) {
+      console.error("Nem sikerült betölteni a recepteket:", err);
+      setError("Nem sikerült betölteni a recepteket.");
+    } finally {
+      setLoading(false);
     }
-
-    fetchRecipes();
   }, []);
 
-  if (loading) {
-    return <p className="text-center mt-10">Loading...</p>;
-  }
+  useEffect(() => {
+    void fetchRecipes();
+  }, [fetchRecipes]);
 
   function handleClick() {
     navigate("/recipes/new");
@@ -40,11 +43,55 @@ function RecipesPage() {
     );
   }
 
+  if (loading) {
+    return (
+      <PageStatus
+        title="Receptek betöltése..."
+        description="Betöltjük a publikus recepteket."
+      />
+    );
+  }
+
+  if (error) {
+    return (
+      <PageStatus
+        title="Hiba történt"
+        description={error}
+        variant="error"
+        actionLabel="Újrapróbálás"
+        onAction={() => void fetchRecipes()}
+      />
+    );
+  }
+
+  if (recipes.length === 0) {
+    return (
+      <PageStatus
+        title="Még nincs egyetlen recept sem."
+        description="Légy te az első, aki megoszt egy receptet."
+      />
+    );
+  }
+
   return (
-    <div className="max-w-5xl mx-auto p-8">
-      <h1 className="text-3xl font-bold mb-6">Receptkönyv</h1>
-      {isAuthenticated && <button onClick={handleClick}>Új recept</button>}
-      <div className="grid md:grid-cols-2 gap-6">
+    <section className="mx-auto max-w-5xl px-4 py-8">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Receptkönyv</h1>
+        </div>
+
+        {isAuthenticated ? (
+          <button
+            type="button"
+            onClick={handleClick}
+            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
+          >
+            Új recept
+          </button>
+        ) : null}
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
         {recipes.map((recipe) => (
           <RecipeCard
             key={recipe.id}
@@ -53,7 +100,7 @@ function RecipesPage() {
           />
         ))}
       </div>
-    </div>
+    </section>
   );
 }
 

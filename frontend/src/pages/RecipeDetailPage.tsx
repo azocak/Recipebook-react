@@ -1,10 +1,8 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-
-import { useRecipe } from "../hooks/useRecipe";
-import { Loading } from "../components/Loading";
-import { PageState } from "../components/PageState";
+import { PageStatus } from "../components/PageStatus";
 import { useDeleteRecipe } from "../hooks/useDeleteRecipe";
+import { useRecipe } from "../hooks/useRecipe";
 
 export default function RecipeDetailPage() {
   const { id } = useParams();
@@ -15,14 +13,35 @@ export default function RecipeDetailPage() {
   const { deleting, deleteError, deleteRecipe } = useDeleteRecipe();
 
   if (loading) {
-    return <Loading />;
+    return (
+      <PageStatus
+        title="Recept betöltése..."
+        description="Betöltjük a recept részleteit."
+      />
+    );
   }
 
   if (error) {
-    return <PageState message={error} tone="error" />;
+    return (
+      <PageStatus
+        title="Nem sikerült betölteni a receptet."
+        description={error}
+        variant="error"
+        backTo="/recipes"
+        backLabel="Vissza a receptekhez"
+      />
+    );
   }
+
   if (!recipe) {
-    return <PageState message="Nincs ilyen recept." />;
+    return (
+      <PageStatus
+        title="Nincs ilyen recept."
+        description="A keresett recept nem található."
+        backTo="/recipes"
+        backLabel="Vissza a receptekhez"
+      />
+    );
   }
 
   const recipeId = recipe.id;
@@ -71,7 +90,14 @@ export default function RecipeDetailPage() {
       <div className="text-sm text-gray-500">
         Létrehozva: {new Date(recipe.created_at).toLocaleString("hu-HU")}
       </div>
-      {deleteError && <p className="text-sm text-red-600">{deleteError}</p>}
+
+      {deleteError ? (
+        <PageStatus
+          title="A törlés nem sikerült."
+          description={deleteError}
+          variant="error"
+        />
+      ) : null}
 
       <div className="flex gap-3">
         <Link

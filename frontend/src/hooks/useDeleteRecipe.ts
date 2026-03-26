@@ -4,22 +4,30 @@ import { getApiErrorMessage } from "../utils/getApiErrorMessage";
 
 export function useDeleteRecipe() {
   const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState("");
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   async function deleteRecipe(recipeId: number) {
+    setDeleting(true);
+    setDeleteError(null);
+
     try {
-      setDeleting(true);
-      setDeleteError("");
       await recipesApi.remove(recipeId);
-    } catch (err) {
-      console.error(err);
-      setDeleteError(
-        getApiErrorMessage(err, "Nem sikerült törölni a receptet"),
+    } catch (error) {
+      const message = getApiErrorMessage(
+        error,
+        "Nem sikerült törölni a receptet.",
       );
+
+      setDeleteError(message);
+      throw error;
     } finally {
       setDeleting(false);
     }
   }
 
-  return { deleting, deleteError, deleteRecipe };
+  return {
+    deleting,
+    deleteError,
+    deleteRecipe,
+  };
 }

@@ -4,8 +4,7 @@ import { recipesApi } from "../api/recipes";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { useRecipe } from "../hooks/useRecipe";
-import { Loading } from "../components/Loading";
-import { PageState } from "../components/PageState";
+import { PageStatus } from "../components/PageStatus";
 
 export default function EditRecipePage() {
   const { id } = useParams();
@@ -15,14 +14,35 @@ export default function EditRecipePage() {
   const { recipe, error, loading } = useRecipe(id);
 
   if (loading) {
-    return <Loading />;
+    return (
+      <PageStatus
+        title="Recept szerkesztő betöltése..."
+        description="Előkészítjük a szerkesztő űrlapot."
+      />
+    );
   }
 
   if (error) {
-    return <PageState message={error} tone="error" />;
+    return (
+      <PageStatus
+        title="Nem sikerült betölteni a receptet."
+        description={error}
+        variant="error"
+        backTo="/recipes"
+        backLabel="Vissza a receptekhez"
+      />
+    );
   }
+
   if (!recipe) {
-    return <PageState message="Nincs ilyen recept." />;
+    return (
+      <PageStatus
+        title="Nincs ilyen recept."
+        description="A keresett recept nem található."
+        backTo="/recipes"
+        backLabel="Vissza a receptekhez"
+      />
+    );
   }
 
   const recipeId = recipe.id;
@@ -30,9 +50,10 @@ export default function EditRecipePage() {
 
   if (!isOwner) {
     return (
-      <PageState
-        message="Nincs jogosultságod a recept szerkesztéséhez."
-        tone="error"
+      <PageStatus
+        title="Nincs jogosultságod ehhez az oldalhoz."
+        description="Csak a recept készítője szerkesztheti ezt a receptet."
+        variant="error"
         backTo={`/recipes/${recipeId}`}
         backLabel="Vissza a recepthez"
       />

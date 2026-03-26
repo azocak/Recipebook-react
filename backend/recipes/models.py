@@ -12,7 +12,7 @@ class Recipe(models.Model):
     ingredients = models.TextField()
     instructions = models.TextField()
     cooking_time = models.PositiveIntegerField(help_text="Percben",validators=[MinValueValidator(1), MaxValueValidator(1440)])
-    servings = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(50)])
+    servings = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(20)])
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
