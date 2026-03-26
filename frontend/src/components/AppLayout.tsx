@@ -7,9 +7,9 @@ type AppLayoutProps = {
 
 export function AppLayout({ children }: AppLayoutProps) {
   return (
-    <>
+    <div className="min-h-screen">
       <Navbar />
-      <main>{children}</main>
-    </>
+      <main className="py-8">{children}</main>
+    </div>
   );
 }
