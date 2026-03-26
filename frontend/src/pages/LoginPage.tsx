@@ -4,7 +4,7 @@ import { useAuth } from "../auth/AuthContext";
 
 import { mapApiErrorsToFormErrors } from "../utils/mapApiErrorsToFormErrors";
 import { AuthLayout } from "../components/auth/AuthLayout";
-import { FormField } from "../components/auth/Formfield";
+import { TextInputField } from "../components/auth/TextInputField";
 
 type LoginFormErrors = {
   username?: string;
@@ -17,6 +17,7 @@ type LocationState = {
     pathname?: string;
   };
 };
+
 export function LoginPage() {
   const { login, loading } = useAuth();
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ export function LoginPage() {
   const from =
     (location.state as LocationState | null)?.from?.pathname || "/recipes";
 
-  const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (e) => {
+  const handleSubmit: React.SubmitEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
 
     const nextErrors: LoginFormErrors = {};
@@ -73,38 +74,70 @@ export function LoginPage() {
       subtitle="Lépj be a fiókodba."
       footer={
         <p>
-          Még nincs fiókod? <NavLink to="/register">Regisztrálj</NavLink>
+          Még nincs fiókod?{" "}
+          <NavLink
+            to="/register"
+            className="font-medium text-slate-900 underline-offset-4 hover:underline"
+          >
+            Regisztrálj
+          </NavLink>
         </p>
       }
     >
-      <form onSubmit={handleSubmit} noValidate>
-        <FormField id="username" label="Felhasználónév" error={errors.username}>
-          <input
-            id="username"
-            type="text"
-            name="username"
-            autoComplete="username"
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-            placeholder="Felhasználónév"
-          />
-        </FormField>
+      <form onSubmit={handleSubmit} noValidate className="space-y-5">
+        <TextInputField
+          id="username"
+          label="Felhasználónév"
+          name="username"
+          value={username}
+          error={errors.username}
+          required
+          autoComplete="username"
+          placeholder="Felhasználónév"
+          onChange={(value) => {
+            setUsername(value);
+            setErrors((current) => ({
+              ...current,
+              username: undefined,
+              general: undefined,
+            }));
+          }}
+        />
 
-        <FormField id="password" label="Jelszó" error={errors.password}>
-          <input
-            id="password"
-            type="password"
-            name="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="Jelszó"
-          />
-        </FormField>
+        <TextInputField
+          id="password"
+          label="Jelszó"
+          type="password"
+          name="password"
+          value={password}
+          error={errors.password}
+          required
+          autoComplete="current-password"
+          placeholder="Jelszó"
+          onChange={(value) => {
+            setPassword(value);
+            setErrors((current) => ({
+              ...current,
+              password: undefined,
+              general: undefined,
+            }));
+          }}
+        />
 
-        {errors.general && <div>{errors.general}</div>}
+        {errors.general ? (
+          <div
+            className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            role="alert"
+          >
+            {errors.general}
+          </div>
+        ) : null}
 
-        <button type="submit" disabled={submitting || loading}>
+        <button
+          type="submit"
+          disabled={submitting || loading}
+          className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+        >
           {submitting || loading ? "Bejelentkezés folyamatban..." : "Belépés"}
         </button>
       </form>
