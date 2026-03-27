@@ -14,30 +14,38 @@ export function validateRecipeForm(data: RecipeFormData): RecipeFormErrors {
   function validateTextarea(
     key: keyof RecipeFormData,
     value: string,
-    fieldHun: string,
+    fieldLabel: string,
     min: number,
   ) {
     if (!value) {
-      errors[key] = `A ${fieldHun} mező kötelező.`;
+      errors[key] = `A(z) ${fieldLabel} mező kötelező.`;
     } else if (value.length < min) {
-      errors[key] = `A ${fieldHun} mező legalább ${min} karakter legyen.`;
+      errors[key] = `A(z) ${fieldLabel} mező legalább ${min} karakter legyen.`;
     }
   }
 
   function validateNumberInput(
     key: keyof RecipeFormData,
     value: number,
-    fieldHun: string,
+    fieldLabel: string,
     min: number,
     max: number,
     unit = "",
   ) {
     const suffix = unit ? ` ${unit}` : "";
 
-    if (!Number.isInteger(value) || value < min) {
-      errors[key] = `A ${fieldHun} legalább ${min}${suffix} legyen.`;
-    } else if (value > max) {
-      errors[key] = `A ${fieldHun} legfeljebb ${max}${suffix} lehet.`;
+    if (!Number.isInteger(value)) {
+      errors[key] = `A(z) ${fieldLabel} mezőbe egész számot adj meg.`;
+      return;
+    }
+
+    if (value < min) {
+      errors[key] = `A(z) ${fieldLabel} legalább ${min}${suffix} legyen.`;
+      return;
+    }
+
+    if (value > max) {
+      errors[key] = `A(z) ${fieldLabel} legfeljebb ${max}${suffix} lehet.`;
     }
   }
 

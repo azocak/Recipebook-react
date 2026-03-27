@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import type { Recipe } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import type { MouseEvent } from "react";
@@ -12,12 +12,8 @@ interface RecipeCardProps {
 function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { deleteRecipe } = useDeleteRecipe();
+  const { deleteRecipe, deleting, deleteError } = useDeleteRecipe();
   const isOwner = !!user && recipe.owner === user.id;
-
-  function handleCardClick() {
-    navigate(`/recipes/${recipe.id}`);
-  }
 
   const handleEditButton = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
@@ -41,43 +37,99 @@ function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
       } else {
         navigate("/recipes");
       }
-    } catch (error) {
-      console.error(error);
+    } catch {
+      // A hibát a hook már kezeli a deleteError állapotban.
     }
   }
 
   return (
-    <div
-      onClick={handleCardClick}
-      className="cursor-pointer rounded-xl bg-white p-6 shadow transition hover:shadow-lg"
-    >
-      <h2 className="text-xl font-bold text-orange-600">{recipe.title}</h2>
-      <div className="mt-4 flex gap-4 text-sm text-gray-500">
-        <span>⏱ {recipe.cooking_time} perc</span>
-        <span>🍽 {recipe.servings} adag</span>
-      </div>
+    <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-md">
+      <div className="flex h-full flex-col">
+        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+          <div className="min-w-0">
+            <p className="text-xs font-medium uppercase tracking-[0.16em] text-orange-700">
+              Recept
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Készítette:{" "}
+              <span className="font-medium text-slate-700">
+                {recipe.owner_username}
+              </span>
+            </p>
+          </div>
 
-      <p className="mt-4 text-sm text-gray-700">{recipe.owner_username}</p>
+          {isOwner ? (
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={handleEditButton}
+                disabled={deleting}
+                className="rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-70"
+                aria-label={`A(z) ${recipe.title} recept szerkesztése`}
+              >
+                Szerkesztés
+              </button>
 
-      {isOwner && (
-        <div className="mt-4 flex gap-4">
-          <button
-            type="button"
-            onClick={handleEditButton}
-            className="cursor-pointer rounded bg-blue-600 px-3 py-2 text-white"
-          >
-            Szerkesztés
-          </button>
-          <button
-            type="button"
-            onClick={handleDeleteButton}
-            className="cursor-pointer rounded bg-red-600 px-3 py-2 text-white"
-          >
-            Törlés
-          </button>
+              <button
+                type="button"
+                onClick={handleDeleteButton}
+                disabled={deleting}
+                className="rounded-full border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
+                aria-label={`A(z) ${recipe.title} recept törlése`}
+              >
+                {deleting ? "Törlés..." : "Törlés"}
+              </button>
+            </div>
+          ) : null}
         </div>
-      )}
-    </div>
+
+        <Link
+          to={`/recipes/${recipe.id}`}
+          className="flex flex-1 flex-col px-5 py-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+          aria-label={`A(z) ${recipe.title} recept megnyitása`}
+        >
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold tracking-tight text-slate-950 transition hover:text-orange-700">
+              {recipe.title}
+            </h2>
+
+            <div className="flex flex-wrap gap-3">
+              <div className="rounded-2xl bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                <span className="font-medium text-slate-900">⏱</span>{" "}
+                {recipe.cooking_time} perc
+              </div>
+
+              <div className="rounded-2xl bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                <span className="font-medium text-slate-900">🍽</span>{" "}
+                {recipe.servings} adag
+              </div>
+            </div>
+
+            {deleteError ? (
+              <div
+                className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                role="alert"
+              >
+                {deleteError}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="mt-6 flex items-center justify-between">
+            <span className="text-sm font-medium text-slate-600 transition hover:text-slate-900">
+              Részletek megnyitása
+            </span>
+
+            <span
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-orange-100 text-orange-700 transition"
+              aria-hidden="true"
+            >
+              →
+            </span>
+          </div>
+        </Link>
+      </div>
+    </article>
   );
 }
 

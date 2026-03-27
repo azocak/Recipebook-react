@@ -1,6 +1,25 @@
 import { ApiError } from "../api/errors";
 
-type FormErrors = Record<string, string | undefined>;
+type FormErrors = Record<string, string>;
+
+function getFirstErrorMessage(value: unknown): string | null {
+  if (typeof value === "string" && value.trim()) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    const firstString = value.find(
+      (item): item is string =>
+        typeof item === "string" && item.trim().length > 0,
+    );
+
+    if (firstString) {
+      return firstString;
+    }
+  }
+
+  return null;
+}
 
 export function mapApiErrorsToFormErrors(
   error: unknown,
@@ -22,13 +41,21 @@ export function mapApiErrorsToFormErrors(
   const data = error.data as Record<string, unknown>;
 
   for (const field of allowedFields) {
-    if (Array.isArray(data[field]) && typeof data[field][0] === "string") {
-      result[field] = data[field][0] as string;
+    const fieldMessage = getFirstErrorMessage(data[field]);
+
+    if (fieldMessage) {
+      result[field] = fieldMessage;
     }
   }
 
-  if (typeof data.detail === "string") {
-    result.general = data.detail;
+  const generalMessage =
+    getFirstErrorMessage(data.non_field_errors) ||
+    getFirstErrorMessage(data.detail) ||
+    getFirstErrorMessage(data.error) ||
+    getFirstErrorMessage(data.message);
+
+  if (generalMessage) {
+    result.general = generalMessage;
   }
 
   return result;
