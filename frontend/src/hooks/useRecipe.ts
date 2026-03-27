@@ -9,7 +9,13 @@ export function useRecipe(id: string | undefined) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function fetchRecipe() {
+      setLoading(true);
+      setError("");
+      setRecipe(null);
+
       if (!id || Number.isNaN(Number(id))) {
         setError("Érvénytelen azonosító");
         setLoading(false);
@@ -17,17 +23,30 @@ export function useRecipe(id: string | undefined) {
       }
 
       try {
-        setError("");
         const data = await recipesApi.getById(Number(id));
+
+        if (cancelled) {
+          return;
+        }
+
         setRecipe(data);
       } catch (err) {
-        console.error(err);
+        if (cancelled) {
+          return;
+        }
+
         setError(getApiErrorMessage(err, "Nem sikerült betölteni a receptet."));
-      } finally {
+      }
+
+      if (!cancelled) {
         setLoading(false);
       }
     }
     void fetchRecipe();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   return { recipe, error, loading };
