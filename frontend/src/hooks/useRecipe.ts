@@ -2,44 +2,98 @@ import { useEffect, useState } from "react";
 import type { Recipe } from "../api/types";
 import { recipesApi } from "../api/recipes";
 import { getApiErrorMessage } from "../utils/getApiErrorMessage";
+import { ApiError } from "../api/errors";
+
+export type UseRecipeStatus =
+  | "loading"
+  | "success"
+  | "invalid-id"
+  | "not-found"
+  | "forbidden"
+  | "error";
+
+type UseRecipeState = {
+  recipe: Recipe | null;
+  status: UseRecipeStatus;
+  errorMessage: string;
+};
+
+const initialState: UseRecipeState = {
+  recipe: null,
+  status: "loading",
+  errorMessage: "",
+};
 
 export function useRecipe(id: string | undefined) {
-  const [recipe, setRecipe] = useState<Recipe | null>(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [state, setState] = useState<UseRecipeState>(initialState);
 
   useEffect(() => {
     let cancelled = false;
 
     async function fetchRecipe() {
-      setLoading(true);
-      setError("");
-      setRecipe(null);
+      setState(initialState);
 
-      if (!id || Number.isNaN(Number(id))) {
-        setError("Érvénytelen azonosító");
-        setLoading(false);
+      const parsedId = Number(id);
+      const invalidId =
+        !id ||
+        !/^\d+$/.test(id) ||
+        !Number.isInteger(parsedId) ||
+        parsedId <= 0;
+
+      if (invalidId) {
+        setState({
+          recipe: null,
+          status: "invalid-id",
+          errorMessage: "Érvénytelen azonosító",
+        });
         return;
       }
 
       try {
-        const data = await recipesApi.getById(Number(id));
+        const data = await recipesApi.getById(parsedId);
 
         if (cancelled) {
           return;
         }
 
-        setRecipe(data);
-      } catch (err) {
+        setState({
+          recipe: data,
+          status: "success",
+          errorMessage: "",
+        });
+      } catch (error) {
         if (cancelled) {
           return;
         }
 
-        setError(getApiErrorMessage(err, "Nem sikerült betölteni a receptet."));
-      }
+        if (error instanceof ApiError) {
+          if (error.status === 404) {
+            setState({
+              recipe: null,
+              status: "not-found",
+              errorMessage: "",
+            });
+          }
 
-      if (!cancelled) {
-        setLoading(false);
+          if (error.status === 403) {
+            setState({
+              recipe: null,
+              status: "forbidden",
+              errorMessage: "Nincs jogosultságod a recept megtekintéséhez",
+            });
+
+            return;
+          }
+        }
+
+        setState({
+          recipe: null,
+          status: "error",
+          errorMessage: getApiErrorMessage(
+            error,
+            "Nem sikerült betölteni a receptet.",
+          ),
+        });
       }
     }
     void fetchRecipe();
@@ -49,5 +103,24 @@ export function useRecipe(id: string | undefined) {
     };
   }, [id]);
 
-  return { recipe, error, loading };
+  const loading = state.status === "loading";
+  const notFound = state.status === "not-found";
+  const forbidden = state.status === "forbidden";
+  const invalidId = state.status === "invalid-id";
+  const genericError = state.status === "error";
+
+  const error =
+    loading || notFound || state.status === "success" ? "" : state.errorMessage;
+
+  return {
+    recipe: state.recipe,
+    status: state.status,
+    errorMessage: state.errorMessage,
+    loading,
+    error,
+    notFound,
+    forbidden,
+    invalidId,
+    genericError,
+  };
 }

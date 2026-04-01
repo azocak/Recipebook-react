@@ -4,15 +4,25 @@ import { PageStatus } from "../components/PageStatus";
 import { useDeleteRecipe } from "../hooks/useDeleteRecipe";
 import { useRecipe } from "../hooks/useRecipe";
 
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString("hu-HU", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default function RecipeDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const { recipe, error, loading } = useRecipe(id);
+  const { recipe, status, errorMessage } = useRecipe(id);
   const { deleting, deleteError, deleteRecipe } = useDeleteRecipe();
 
-  if (loading) {
+  if (status === "loading") {
     return (
       <PageStatus
         title="Recept betöltése..."
@@ -21,11 +31,11 @@ export default function RecipeDetailPage() {
     );
   }
 
-  if (error) {
+  if (status === "invalid-id") {
     return (
       <PageStatus
-        title="Nem sikerült betölteni a receptet."
-        description={error}
+        title="Érvénytelen receptazonosító."
+        description={errorMessage}
         variant="error"
         backTo="/recipes"
         backLabel="Vissza a receptekhez"
@@ -33,7 +43,7 @@ export default function RecipeDetailPage() {
     );
   }
 
-  if (!recipe) {
+  if (status === "not-found") {
     return (
       <PageStatus
         title="Nincs ilyen recept."
@@ -42,6 +52,34 @@ export default function RecipeDetailPage() {
         backLabel="Vissza a receptekhez"
       />
     );
+  }
+
+  if (status === "forbidden") {
+    return (
+      <PageStatus
+        title="Nincs jogosultságod a recept megtekintéséhez."
+        description={errorMessage}
+        variant="error"
+        backTo="/recipes"
+        backLabel="Vissza a receptekhez"
+      />
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <PageStatus
+        title="Nem sikerült betölteni a receptet."
+        description={errorMessage}
+        variant="error"
+        backTo="/recipes"
+        backLabel="Vissza a receptekhez"
+      />
+    );
+  }
+
+  if (!recipe) {
+    return null;
   }
 
   const recipeId = recipe.id;
@@ -62,16 +100,6 @@ export default function RecipeDetailPage() {
     } catch {
       // A hibát a useDeleteRecipe hook kezeli
     }
-  }
-
-  function formatDateTime(value: string) {
-    return new Date(value).toLocaleString("hu-HU", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   }
 
   return (
@@ -156,7 +184,11 @@ export default function RecipeDetailPage() {
 
           <div className="space-y-8 px-6 py-6 sm:px-8">
             {deleteError ? (
-              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div
+                role="alert"
+                aria-live="polite"
+                className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+              >
                 {deleteError}
               </div>
             ) : null}
