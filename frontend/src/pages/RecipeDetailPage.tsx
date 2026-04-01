@@ -117,6 +117,15 @@ export default function RecipeDetailPage() {
                       {recipe.servings}
                     </p>
                   </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Főzési idő
+                    </p>
+                    <p className="mt-1 text-sm text-center font-semibold text-slate-900">
+                      {recipe.cooking_time} perc
+                    </p>
+                  </div>
                 </div>
               </div>
 

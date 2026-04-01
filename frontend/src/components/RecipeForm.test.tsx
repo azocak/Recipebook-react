@@ -35,11 +35,17 @@ function setup(
 async function fillWithValidData() {
   const user = userEvent.setup();
 
-  const titleInput = screen.getByLabelText("Recept neve");
-  const ingredientsInput = screen.getByLabelText("Hozzávalók");
-  const instructionsInput = screen.getByLabelText("Elkészítés");
-  const cookingTimeInput = screen.getByLabelText("Főzési idő (perc)");
-  const servingsInput = screen.getByLabelText("Adagok száma");
+  const titleInput = screen.getByRole("textbox", { name: /recept neve/i });
+  const ingredientsInput = screen.getByRole("textbox", { name: /hozzávalók/i });
+  const instructionsInput = screen.getByRole("textbox", {
+    name: /elkészítés/i,
+  });
+  const cookingTimeInput = screen.getByRole("spinbutton", {
+    name: /főzési idő/i,
+  });
+  const servingsInput = screen.getByRole("spinbutton", {
+    name: /adagok száma/i,
+  });
 
   await user.clear(titleInput);
   await user.type(titleInput, validData.title);
@@ -59,7 +65,7 @@ async function fillWithValidData() {
   return user;
 }
 
-async function submitFormWithInvalidFiled<K extends keyof RecipeFormData>(
+async function submitFormWithInvalidField<K extends keyof RecipeFormData>(
   field: K,
   value: RecipeFormData[K],
 ) {
@@ -79,23 +85,52 @@ describe("RecipeForm", () => {
   it.each([
     ["title", "", "A recept neve kötelező."],
     ["title", "ab", "A recept neve legalább 3 karakter legyen."],
-    ["ingredients", "", "A hozzávalók mező kötelező."],
-    ["ingredients", "rövid", "A hozzávalók mező legalább 10 karakter legyen."],
-    ["instructions", "", "Az elkészítés mező kötelező."],
+    ["title", "a".repeat(121), "A recept neve legfeljebb 120 karakter lehet."],
+    ["ingredients", "", "A(z) hozzávalók mező kötelező."],
+    [
+      "ingredients",
+      "rövid",
+      "A(z) hozzávalók mező legalább 10 karakter legyen.",
+    ],
+    ["instructions", "", "A(z) elkészítés mező kötelező."],
     [
       "instructions",
       "rövid",
-      "Az elkészítés mező legalább 10 karakter legyen.",
+      "A(z) elkészítés mező legalább 10 karakter legyen.",
     ],
-    ["cooking_time", 0, "A főzési idő legalább 1 perc legyen."],
-    ["servings", 0, "Az adagok száma legalább 1 legyen."],
+    ["cooking_time", 0, "A(z) főzési idő legalább 1 perc legyen."],
+    ["cooking_time", 1441, "A(z) főzési idő legfeljebb 1440 perc lehet."],
+    ["servings", 0, "A(z) adagok száma legalább 1 legyen."],
+    ["servings", 21, "A(z) adagok száma legfeljebb 20 lehet."],
   ] as const)(
     "megjeleníti a kliens oldali hibát, ha a(z) %s mező hibás",
     async (field, value, errorMessage) => {
-      await submitFormWithInvalidFiled(field, value);
+      await submitFormWithInvalidField(field, value);
       expect(screen.getByText(errorMessage)).toBeInTheDocument();
     },
   );
+
+  it("eltünteti a mezőhibát, amikor a felhasználó javítani kezdi az adott mezőt", async () => {
+    const user = userEvent.setup();
+
+    setup({
+      initialValues: {
+        ...validData,
+        title: "",
+      },
+    });
+
+    await user.click(screen.getByRole("button", { name: "Mentés" }));
+
+    expect(screen.getByText("A recept neve kötelező.")).toBeInTheDocument();
+
+    const titleInput = screen.getByRole("textbox", { name: /recept neve/i });
+    await user.type(titleInput, "P");
+
+    expect(
+      screen.queryByText("A recept neve kötelező."),
+    ).not.toBeInTheDocument();
+  });
 
   it("megjeleníti a hibát, ha a hozzávalók és az elkészítés ugyanaz", async () => {
     const user = userEvent.setup();

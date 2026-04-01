@@ -49,7 +49,7 @@ export function Navbar() {
       });
     } catch (error) {
       setLogoutError(
-        getApiErrorMessage(error, "A kijelnetkezés nem sikerült."),
+        getApiErrorMessage(error, "A kijelentkezés nem sikerült."),
       );
     } finally {
       setIsLoggingOut(false);
