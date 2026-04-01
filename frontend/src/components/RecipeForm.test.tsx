@@ -110,7 +110,7 @@ describe("RecipeForm", () => {
     },
   );
 
-  it("eltünteti a mezőhibát, amikor a felhasználó javítani kezdi az adott mezőt", async () => {
+  it("clears the field error when the user begins to edit that field", async () => {
     const user = userEvent.setup();
 
     setup({
@@ -132,7 +132,7 @@ describe("RecipeForm", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("megjeleníti a hibát, ha a hozzávalók és az elkészítés ugyanaz", async () => {
+  it("displays an error if the ingredients and preparation are the same", async () => {
     const user = userEvent.setup();
 
     setup({
@@ -150,7 +150,7 @@ describe("RecipeForm", () => {
     ).toBeInTheDocument();
   });
 
-  it("meghívja az onSubmit-et helyes adatokkal", async () => {
+  it("calls the onSubmit event with the correct data", async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
 
@@ -172,7 +172,7 @@ describe("RecipeForm", () => {
     expect(onSubmit).toHaveBeenCalledWith(validData);
   });
 
-  it("trim-elt adatokkal hívja meg az onSubmit-et", async () => {
+  it("call the onSubmit event with the trimmed data", async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
 
@@ -198,7 +198,7 @@ describe("RecipeForm", () => {
     });
   });
 
-  it("megjeleníti a backend mezőhibát", async () => {
+  it("displays the backend field error", async () => {
     const user = userEvent.setup();
 
     const onSubmit = vi.fn().mockRejectedValue(
@@ -216,7 +216,7 @@ describe("RecipeForm", () => {
     ).toBeInTheDocument();
   });
 
-  it("megjeleníti az általános backend hibát", async () => {
+  it("displays a general backend error", async () => {
     const user = userEvent.setup();
 
     const onSubmit = vi.fn().mockRejectedValue(
@@ -234,7 +234,7 @@ describe("RecipeForm", () => {
     expect(screen.getByText("Szerverhiba történt.")).toBeInTheDocument();
   });
 
-  it("disable-olja a gombot küldés közben", async () => {
+  it("disables the button while sending", async () => {
     let resolvePromise: (() => void) | undefined;
 
     const onSubmit = vi.fn(
