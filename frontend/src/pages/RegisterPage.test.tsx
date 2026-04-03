@@ -1,9 +1,9 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { ApiError } from "../api/errors";
-import { createAuthState } from "../test/auth-fixtures";
+import { setMockAuthState } from "../test/auth-fixtures";
 import { RegisterPage } from "./RegisterPage";
+import { renderRoute } from "../test/router";
 
 const mockNavigate = vi.fn();
 const mockUseAuth = vi.fn();
@@ -24,31 +24,22 @@ vi.mock("../auth/AuthContext", () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-function setAuthState(overrides?: Partial<ReturnType<typeof createAuthState>>) {
-  const state = createAuthState(overrides);
-  mockUseAuth.mockReturnValue(state);
-  return state;
-}
-
 function renderRegisterPage(route = "/register") {
-  return render(
-    <MemoryRouter initialEntries={[route]}>
-      <Routes>
-        <Route path="/register" element={<RegisterPage />} />
-      </Routes>
-    </MemoryRouter>,
-  );
+  return renderRoute(<RegisterPage />, {
+    path: "/register",
+    entry: route,
+  });
 }
 
 describe("RegisterPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setAuthState();
+    setMockAuthState(mockUseAuth);
   });
 
   it("shows validation errors when all required fields are empty", async () => {
     const user = userEvent.setup();
-    const authState = setAuthState();
+    const authState = setMockAuthState(mockUseAuth);
 
     renderRegisterPage();
 
@@ -70,7 +61,7 @@ describe("RegisterPage", () => {
 
   it("shows an error when the two passwords do not match", async () => {
     const user = userEvent.setup();
-    const authState = setAuthState();
+    const authState = setMockAuthState(mockUseAuth);
 
     renderRegisterPage();
 
@@ -90,7 +81,7 @@ describe("RegisterPage", () => {
 
   it("maps backend field errors to the matching form fields", async () => {
     const user = userEvent.setup();
-    const authState = setAuthState({
+    const authState = setMockAuthState(mockUseAuth, {
       register: vi.fn().mockRejectedValue(
         new ApiError("Register failed", 400, {
           username: ["Ez a felhasználónév már foglalt."],
@@ -135,7 +126,7 @@ describe("RegisterPage", () => {
 
   it("registers successfully and redirects to /recipes", async () => {
     const user = userEvent.setup();
-    const authState = setAuthState({
+    const authState = setMockAuthState(mockUseAuth, {
       register: vi.fn().mockResolvedValue(undefined),
     });
 

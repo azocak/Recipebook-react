@@ -22,3 +22,32 @@ export function createAuthState(overrides?: Partial<AuthState>): AuthState {
     ...overrides,
   };
 }
+
+export type MockUseAuth = ReturnType<typeof vi.fn>;
+
+export function setMockAuthState(
+  mockUseAuth: MockUseAuth,
+  overrides?: Partial<AuthState>,
+) {
+  const state = createAuthState(overrides);
+  mockUseAuth.mockReturnValue(state);
+  return state;
+}
+
+export function setGuestAuth(mockUseAuth: MockUseAuth) {
+  return setMockAuthState(mockUseAuth);
+}
+
+export function setAuthenticatedUser(
+  mockUseAuth: MockUseAuth,
+  user = {
+    id: 1,
+    username: "anna",
+    email: "anna@gmail.com",
+  },
+) {
+  return setMockAuthState(mockUseAuth, {
+    user,
+    isAuthenticated: true,
+  });
+}

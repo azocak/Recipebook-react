@@ -1,9 +1,9 @@
-import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { createAuthState } from "../test/auth-fixtures";
-import { mockRecipe } from "../test/recipe-fixtures";
+import { setAuthenticatedUser, setGuestAuth } from "../test/auth-fixtures";
+import { mockRecipe, setMockUseRecipeState } from "../test/recipe-fixtures";
 import RecipeDetailPage from "./RecipeDetailPage";
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { renderRoute } from "../test/router";
 
 const mockUseAuth = vi.fn();
 const mockNavigate = vi.fn();
@@ -26,75 +26,13 @@ vi.mock("../auth/AuthContext", () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-vi.mock("../hooks/useRecipe.ts", () => ({
+vi.mock("../hooks/useRecipe", () => ({
   useRecipe: (id: string | undefined) => mockUseRecipe(id),
 }));
 
-vi.mock("../hooks/useDeleteRecipe.ts", () => ({
+vi.mock("../hooks/useDeleteRecipe", () => ({
   useDeleteRecipe: () => mockUseDeleteRecipe(),
 }));
-
-function setAuthGuest() {
-  mockUseAuth.mockReturnValue(createAuthState());
-}
-
-function setAuthUser(
-  user = { id: 1, username: "anna", email: "anna@gmail.com" },
-) {
-  mockUseAuth.mockReturnValue(
-    createAuthState({
-      user,
-      isAuthenticated: true,
-    }),
-  );
-}
-
-type MockUseRecipeState = {
-  recipe: typeof mockRecipe | null;
-  status:
-    | "loading"
-    | "success"
-    | "invalid-id"
-    | "not-found"
-    | "forbidden"
-    | "error";
-  errorMessage: string;
-  loading: boolean;
-  error: string;
-  notFound: boolean;
-  invalidId: boolean;
-  forbidden: boolean;
-  genericError: boolean;
-};
-
-function createUseRecipeState(
-  overrides?: Partial<MockUseRecipeState>,
-): MockUseRecipeState {
-  const status = overrides?.status ?? "success";
-  const errorMessage = overrides?.errorMessage ?? "";
-
-  return {
-    recipe: mockRecipe,
-    status,
-    errorMessage,
-    loading: status === "loading",
-    error:
-      status === "error" || status === "forbidden" || status === "invalid-id"
-        ? errorMessage
-        : "",
-    notFound: status === "not-found",
-    forbidden: status === "forbidden",
-    invalidId: status === "invalid-id",
-    genericError: status === "error",
-    ...overrides,
-  };
-}
-
-function setUseRecipeState(overrides?: Partial<MockUseRecipeState>) {
-  const state = createUseRecipeState(overrides);
-  mockUseRecipe.mockReturnValue(state);
-  return state;
-}
 
 type DeleteHookState = {
   deleteRecipe: ReturnType<typeof vi.fn>;
@@ -118,26 +56,23 @@ function setDeleteHook(overrides?: Partial<DeleteHookState>) {
 }
 
 function renderRecipeDetailPage(route = "/recipes/1") {
-  return render(
-    <MemoryRouter initialEntries={[route]}>
-      <Routes>
-        <Route path="/recipes/:id" element={<RecipeDetailPage />} />
-      </Routes>
-    </MemoryRouter>,
-  );
+  return renderRoute(<RecipeDetailPage />, {
+    path: "/recipes/:id",
+    entry: route,
+  });
 }
 
 describe("RecipeDetailPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setAuthGuest();
-    setUseRecipeState();
+    setGuestAuth(mockUseAuth);
+    setMockUseRecipeState(mockUseRecipe);
     setDeleteHook();
     vi.spyOn(window, "confirm").mockReturnValue(true);
   });
 
   it("shows the loading state while the recipe is being fetched", () => {
-    setUseRecipeState({
+    setMockUseRecipeState(mockUseRecipe, {
       recipe: null,
       status: "loading",
       errorMessage: "",
@@ -156,7 +91,7 @@ describe("RecipeDetailPage", () => {
   });
 
   it("shows the generic error state", () => {
-    setUseRecipeState({
+    setMockUseRecipeState(mockUseRecipe, {
       recipe: null,
       status: "error",
       errorMessage: "Szerver hiba.",
@@ -175,7 +110,7 @@ describe("RecipeDetailPage", () => {
   });
 
   it("shows the not found state", () => {
-    setUseRecipeState({
+    setMockUseRecipeState(mockUseRecipe, {
       recipe: null,
       status: "not-found",
       errorMessage: "",
@@ -193,7 +128,7 @@ describe("RecipeDetailPage", () => {
   });
 
   it("shows the owner action buttons for the recipe owner", () => {
-    setAuthUser();
+    setAuthenticatedUser(mockUseAuth);
 
     renderRecipeDetailPage();
 
@@ -204,7 +139,7 @@ describe("RecipeDetailPage", () => {
   });
 
   it("does not show owner action buttons for guests", () => {
-    setAuthGuest();
+    setGuestAuth(mockUseAuth);
 
     renderRecipeDetailPage();
 
@@ -220,7 +155,7 @@ describe("RecipeDetailPage", () => {
     const user = userEvent.setup();
     const deleteRecipeMock = vi.fn().mockResolvedValue(undefined);
 
-    setAuthUser();
+    setAuthenticatedUser(mockUseAuth);
     setDeleteHook({ deleteRecipe: deleteRecipeMock });
     vi.spyOn(window, "confirm").mockReturnValue(false);
 
@@ -239,7 +174,7 @@ describe("RecipeDetailPage", () => {
     const user = userEvent.setup();
     const deleteRecipeMock = vi.fn().mockResolvedValue(undefined);
 
-    setAuthUser();
+    setAuthenticatedUser(mockUseAuth);
     setDeleteHook({ deleteRecipe: deleteRecipeMock });
 
     renderRecipeDetailPage();
@@ -254,7 +189,7 @@ describe("RecipeDetailPage", () => {
   });
 
   it("shows the delete error as an alert", () => {
-    setAuthUser();
+    setAuthenticatedUser(mockUseAuth);
     setDeleteHook({ deleteError: "Nem sikerült törölni a receptet." });
 
     renderRecipeDetailPage();
@@ -262,5 +197,17 @@ describe("RecipeDetailPage", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Nem sikerült törölni a receptet.",
     );
+  });
+
+  it("navigates to the edit page when the owner clicks edit", async () => {
+    const user = userEvent.setup();
+
+    setAuthenticatedUser(mockUseAuth);
+
+    renderRecipeDetailPage();
+
+    await user.click(screen.getByRole("button", { name: "Szerkesztés" }));
+
+    expect(mockNavigate).toHaveBeenCalledWith(`/recipes/${mockRecipe.id}/edit`);
   });
 });

@@ -1,10 +1,10 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import RecipesPage from "./RecipesPage";
-import { createAuthState } from "../test/auth-fixtures";
-import { MemoryRouter } from "react-router-dom";
+import { setAuthenticatedUser, setGuestAuth } from "../test/auth-fixtures";
 import { ApiError } from "../api/errors";
 import userEvent from "@testing-library/user-event";
 import { mockRecipes } from "../test/recipe-fixtures";
+import { renderRoute } from "../test/router";
 
 const mockUseAuth = vi.fn();
 const mockGetAll = vi.fn();
@@ -49,29 +49,11 @@ vi.mock("../components/RecipeCard", () => ({
   ),
 }));
 
-function setAuthState(isAuthenticated = false) {
-  mockUseAuth.mockReturnValue(
-    createAuthState(
-      isAuthenticated
-        ? {
-            user: {
-              id: 1,
-              username: "anna",
-              email: "anna@gmail.com",
-            },
-            isAuthenticated: true,
-          }
-        : {},
-    ),
-  );
-}
-
 function renderRecipesPage() {
-  return render(
-    <MemoryRouter>
-      <RecipesPage />
-    </MemoryRouter>,
-  );
+  return renderRoute(<RecipesPage />, {
+    path: "/recipes",
+    entry: "/recipes",
+  });
 }
 
 async function renderPageWithRecipes({
@@ -81,7 +63,12 @@ async function renderPageWithRecipes({
   recipes?: typeof mockRecipes;
   isAuthenticated?: boolean;
 }) {
-  setAuthState(isAuthenticated);
+  if (isAuthenticated) {
+    setAuthenticatedUser(mockUseAuth);
+  } else {
+    setGuestAuth(mockUseAuth);
+  }
+
   mockGetAll.mockResolvedValue(recipes);
   renderRecipesPage();
 
@@ -93,9 +80,9 @@ async function renderPageWithRecipes({
         name: "Még nincs egyetlen recept sem",
       });
     }
-  } else {
-    await screen.findByRole("heading", { name: "Receptkönyv" });
   }
+
+  await screen.findByRole("heading", { name: "Receptkönyv" });
 }
 
 function expectStatusBadge(isAuthenticated: boolean) {
@@ -111,7 +98,7 @@ function expectRecipeCount(count: number) {
 describe("RecipesPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setAuthState(false);
+    setGuestAuth(mockUseAuth);
   });
 
   it("shows the loading state while recipes are being fetched", () => {

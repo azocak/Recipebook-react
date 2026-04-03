@@ -1,9 +1,9 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import type { RecipeFormData } from "../api/types";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
 import NewRecipePage from "./NewRecipePage";
 import { mockRecipe } from "../test/recipe-fixtures";
 import userEvent from "@testing-library/user-event";
+import { renderRoute } from "../test/router";
 
 const mockNavigate = vi.fn();
 const mockCreateRecipe = vi.fn();
@@ -72,13 +72,10 @@ vi.mock("../components/RecipeForm", () => ({
 }));
 
 function renderNewRecipePage(route = "/recipes/new") {
-  return render(
-    <MemoryRouter initialEntries={[route]}>
-      <Routes>
-        <Route path="/recipes/new" element={<NewRecipePage />} />
-      </Routes>
-    </MemoryRouter>,
-  );
+  return renderRoute(<NewRecipePage />, {
+    path: "/recipes/new",
+    entry: route,
+  });
 }
 
 describe("NewRecipePage", () => {

@@ -1,10 +1,10 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import type { RecipeFormData } from "../api/types";
-import { createAuthState } from "../test/auth-fixtures";
-import { mockRecipe } from "../test/recipe-fixtures";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { setAuthenticatedUser } from "../test/auth-fixtures";
+import { mockRecipe, setMockUseRecipeState } from "../test/recipe-fixtures";
 import EditRecipePage from "./EditRecipePage";
 import userEvent from "@testing-library/user-event";
+import { renderRoute } from "../test/router";
 
 const mockNavigate = vi.fn();
 const mockUseAuth = vi.fn();
@@ -74,84 +74,23 @@ vi.mock("../components/RecipeForm", () => ({
   },
 }));
 
-function setAuthUser(
-  user = { id: 1, username: "anna", email: "anna@gmail.com" },
-) {
-  mockUseAuth.mockReturnValue(
-    createAuthState({
-      user,
-      isAuthenticated: true,
-    }),
-  );
-}
-
-type MockUseRecipeState = {
-  recipe: typeof mockRecipe | null;
-  status:
-    | "loading"
-    | "success"
-    | "invalid-id"
-    | "not-found"
-    | "forbidden"
-    | "error";
-  errorMessage: string;
-  loading: boolean;
-  error: string;
-  notFound: boolean;
-  invalidId: boolean;
-  forbidden: boolean;
-  genericError: boolean;
-};
-
-function createUseRecipeState(
-  overrides?: Partial<MockUseRecipeState>,
-): MockUseRecipeState {
-  const status = overrides?.status ?? "success";
-  const errorMessage = overrides?.errorMessage ?? "";
-
-  return {
-    recipe: mockRecipe,
-    status,
-    errorMessage,
-    loading: status === "loading",
-    error:
-      status === "error" || status === "forbidden" || status === "invalid-id"
-        ? errorMessage
-        : "",
-    notFound: status === "not-found",
-    forbidden: status === "forbidden",
-    invalidId: status === "invalid-id",
-    genericError: status === "error",
-    ...overrides,
-  };
-}
-
-function setUseRecipeState(overrides?: Partial<MockUseRecipeState>) {
-  const state = createUseRecipeState(overrides);
-  mockUseRecipe.mockReturnValue(state);
-  return state;
-}
-
 function renderEditRecipePage(route = "/recipes/1/edit") {
-  return render(
-    <MemoryRouter initialEntries={[route]}>
-      <Routes>
-        <Route path="/recipes/:id/edit" element={<EditRecipePage />} />
-      </Routes>
-    </MemoryRouter>,
-  );
+  return renderRoute(<EditRecipePage />, {
+    path: "/recipes/:id/edit",
+    entry: route,
+  });
 }
 
 describe("EditRecipePage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setAuthUser();
-    setUseRecipeState();
+    setAuthenticatedUser(mockUseAuth);
+    setMockUseRecipeState(mockUseRecipe);
     mockUpdateRecipe.mockResolvedValue(mockRecipe);
   });
 
   it("shows the loading state while the editor is being prepared", () => {
-    setUseRecipeState({
+    setMockUseRecipeState(mockUseRecipe, {
       recipe: null,
       status: "loading",
       errorMessage: "",
@@ -172,7 +111,7 @@ describe("EditRecipePage", () => {
   });
 
   it("shows the generic error state", () => {
-    setUseRecipeState({
+    setMockUseRecipeState(mockUseRecipe, {
       recipe: null,
       status: "error",
       errorMessage: "Szerver hiba.",
@@ -192,7 +131,7 @@ describe("EditRecipePage", () => {
   });
 
   it("shows the no-access state for non-owners", () => {
-    setAuthUser({
+    setAuthenticatedUser(mockUseAuth, {
       id: 2,
       username: "bela",
       email: "bela@gmail.com",

@@ -1,9 +1,9 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import { createAuthState } from "../test/auth-fixtures";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { screen, waitFor } from "@testing-library/react";
+import { setMockAuthState } from "../test/auth-fixtures";
 import { LoginPage } from "./LoginPage";
 import userEvent from "@testing-library/user-event";
 import { ApiError } from "../api/errors";
+import { renderRoute, type RouteEntry } from "../test/router";
 
 const mockNavigate = vi.fn();
 const mockUseAuth = vi.fn();
@@ -24,33 +24,22 @@ vi.mock("../auth/AuthContext", () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-function setAuthState(overrides?: Partial<ReturnType<typeof createAuthState>>) {
-  const state = createAuthState(overrides);
-  mockUseAuth.mockReturnValue(state);
-  return state;
-}
-
-function renderLoginPage(
-  initialEntry: string | { pathname: string; state?: unknown } = "/login",
-) {
-  return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-      </Routes>
-    </MemoryRouter>,
-  );
+function renderLoginPage(initialEntry: RouteEntry = "/login") {
+  return renderRoute(<LoginPage />, {
+    path: "/login",
+    entry: initialEntry,
+  });
 }
 
 describe("LoginPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setAuthState();
+    setMockAuthState(mockUseAuth);
   });
 
   it("shows validation errors when the required fields are empty", async () => {
     const user = userEvent.setup();
-    const authState = setAuthState();
+    const authState = setMockAuthState(mockUseAuth);
 
     renderLoginPage();
 
@@ -66,7 +55,7 @@ describe("LoginPage", () => {
 
   it("shows the backend login error", async () => {
     const user = userEvent.setup();
-    const authState = setAuthState({
+    const authState = setMockAuthState(mockUseAuth, {
       login: vi.fn().mockRejectedValue(
         new ApiError("Login failed", 400, {
           non_field_errors: ["Hibás felhasználónév vagy jelszó."],
@@ -92,7 +81,7 @@ describe("LoginPage", () => {
 
   it("logs in successfully and redirects to /recipes by default", async () => {
     const user = userEvent.setup();
-    const authState = setAuthState({
+    const authState = setMockAuthState(mockUseAuth, {
       login: vi.fn().mockResolvedValue(undefined),
     });
 
@@ -111,7 +100,7 @@ describe("LoginPage", () => {
 
   it("redirects to location.state.from after a successful login", async () => {
     const user = userEvent.setup();
-    const authState = setAuthState({
+    const authState = setMockAuthState(mockUseAuth, {
       login: vi.fn().mockResolvedValue(undefined),
     });
 

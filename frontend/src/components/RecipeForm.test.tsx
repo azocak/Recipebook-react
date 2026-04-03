@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import type { RecipeFormData } from "../api/types";
 import RecipeForm from "./RecipeForm";
 import userEvent from "@testing-library/user-event";
@@ -253,5 +253,9 @@ describe("RecipeForm", () => {
     expect(button).toBeDisabled();
 
     resolvePromise?.();
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Mentés" })).not.toBeDisabled();
+    });
   });
 });
