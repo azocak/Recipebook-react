@@ -90,6 +90,47 @@ describe("RecipeDetailPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows the invalid id state", () => {
+    setMockUseRecipeState(mockUseRecipe, {
+      recipe: null,
+      status: "invalid-id",
+      errorMessage: "Érvénytelen azonosító.",
+      invalidId: true,
+      error: "Érvénytelen azonosító.",
+    });
+
+    renderRecipeDetailPage("/recipes/abc");
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Érvénytelen receptazonosító.",
+      }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText("Érvénytelen azonosító.")).toBeInTheDocument();
+  });
+
+  it("shows the forbidden state", () => {
+    setMockUseRecipeState(mockUseRecipe, {
+      recipe: null,
+      status: "forbidden",
+      errorMessage: "Nincs jogosultságod a recept megtekintéséhez.",
+      forbidden: true,
+      error: "Nincs jogosultságod a recept megtekintéséhez.",
+    });
+
+    renderRecipeDetailPage();
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Nem tekintheted meg ezt a receptet.",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("Nincs jogosultságod a recept megtekintéséhez."),
+    ).toBeInTheDocument();
+  });
   it("shows the generic error state", () => {
     setMockUseRecipeState(mockUseRecipe, {
       recipe: null,

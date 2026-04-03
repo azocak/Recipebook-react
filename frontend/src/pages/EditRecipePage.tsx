@@ -11,9 +11,9 @@ export default function EditRecipePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const { recipe, error, loading } = useRecipe(id);
+  const { recipe, status, errorMessage } = useRecipe(id);
 
-  if (loading) {
+  if (status === "loading") {
     return (
       <PageStatus
         title="Recept szerkesztő betöltése..."
@@ -22,11 +22,11 @@ export default function EditRecipePage() {
     );
   }
 
-  if (error) {
+  if (status === "invalid-id") {
     return (
       <PageStatus
-        title="Nem sikerült betölteni a receptet."
-        description={error}
+        title="Érvénytelen receptazonosító."
+        description={errorMessage}
         variant="error"
         backTo="/recipes"
         backLabel="Vissza a receptekhez"
@@ -34,7 +34,7 @@ export default function EditRecipePage() {
     );
   }
 
-  if (!recipe) {
+  if (status === "not-found") {
     return (
       <PageStatus
         title="Nincs ilyen recept."
@@ -43,6 +43,34 @@ export default function EditRecipePage() {
         backLabel="Vissza a receptekhez"
       />
     );
+  }
+
+  if (status === "forbidden") {
+    return (
+      <PageStatus
+        title="Nem módosíthatod ezt a receptet."
+        description={errorMessage}
+        variant="error"
+        backTo="/recipes"
+        backLabel="Vissza a receptekhez"
+      />
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <PageStatus
+        title="Nem sikerült betölteni a receptet."
+        description={errorMessage}
+        variant="error"
+        backTo="/recipes"
+        backLabel="Vissza a receptekhez"
+      />
+    );
+  }
+
+  if (!recipe) {
+    return null;
   }
 
   const recipeId = recipe.id;

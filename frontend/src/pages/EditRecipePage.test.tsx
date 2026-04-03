@@ -110,6 +110,74 @@ describe("EditRecipePage", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows the invalid id state", () => {
+    setMockUseRecipeState(mockUseRecipe, {
+      recipe: null,
+      status: "invalid-id",
+      errorMessage: "Érvénytelen azonosító.",
+      invalidId: true,
+      error: "Érvénytelen azonosító.",
+    });
+
+    renderEditRecipePage("/recipes/abc/edit");
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Érvénytelen receptazonosító.",
+      }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText("Érvénytelen azonosító.")).toBeInTheDocument();
+    expect(mockRecipeFormProps).not.toHaveBeenCalled();
+  });
+
+  it("shows the not found state", () => {
+    setMockUseRecipeState(mockUseRecipe, {
+      recipe: null,
+      status: "not-found",
+      errorMessage: "",
+      notFound: true,
+    });
+
+    renderEditRecipePage();
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Nincs ilyen recept.",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("A keresett recept nem található."),
+    ).toBeInTheDocument();
+
+    expect(mockRecipeFormProps).not.toHaveBeenCalled();
+  });
+
+  it("shows the forbidden state", () => {
+    setMockUseRecipeState(mockUseRecipe, {
+      recipe: null,
+      status: "forbidden",
+      errorMessage: "Nincs jogosultságod a recept szerkesztéséhez.",
+      forbidden: true,
+      error: "Nincs jogosultságod a recept szerkesztéséhez.",
+    });
+
+    renderEditRecipePage();
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Nem módosíthatod ezt a receptet.",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("Nincs jogosultságod a recept szerkesztéséhez."),
+    ).toBeInTheDocument();
+
+    expect(mockRecipeFormProps).not.toHaveBeenCalled();
+  });
+
   it("shows the generic error state", () => {
     setMockUseRecipeState(mockUseRecipe, {
       recipe: null,

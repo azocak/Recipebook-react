@@ -73,6 +73,8 @@ export function useRecipe(id: string | undefined) {
               status: "not-found",
               errorMessage: "",
             });
+
+            return;
           }
 
           if (error.status === 403) {

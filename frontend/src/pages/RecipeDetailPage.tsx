@@ -57,7 +57,7 @@ export default function RecipeDetailPage() {
   if (status === "forbidden") {
     return (
       <PageStatus
-        title="Nincs jogosultságod a recept megtekintéséhez."
+        title="Nem tekintheted meg ezt a receptet."
         description={errorMessage}
         variant="error"
         backTo="/recipes"
