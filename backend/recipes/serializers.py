@@ -1,9 +1,13 @@
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
+from PIL import Image, UnidentifiedImageError
 
 from .models import Recipe
 
 User = get_user_model()
+
+MAX_IMAGE_SIZE = 5 * 1024 * 1024
+ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -120,7 +124,11 @@ class LoginSerializer(serializers.Serializer):
 class RecipeSerializer(serializers.ModelSerializer):
     owner_username = serializers.CharField(source="owner.username", read_only=True)
     image_url = serializers.SerializerMethodField(read_only=True)
-    remove_image = serializers.BooleanField(write_only=True, required=False, default=False)
+    remove_image = serializers.BooleanField(
+        write_only=True,
+        required=False,
+        default=False,
+    )
 
     title = serializers.CharField(
         max_length=120,
@@ -246,8 +254,48 @@ class RecipeSerializer(serializers.ModelSerializer):
 
         return value
 
+    def validate_image(self, value):
+        if value is None:
+            return value
+
+        if value.size > MAX_IMAGE_SIZE:
+            raise serializers.ValidationError(
+                "A fájl mérete nem lehet nagyobb 5 MB-nál."
+            )
+
+        try:
+            image = Image.open(value)
+            image_format = (image.format or "").upper()
+            image.verify()
+        except (UnidentifiedImageError, OSError, ValueError):
+            raise serializers.ValidationError(
+                "A kiválasztott fájl nem érvényes kép."
+            )
+        finally:
+            if hasattr(value, "seek"):
+                value.seek(0)
+
+        if image_format not in ALLOWED_IMAGE_FORMATS:
+            raise serializers.ValidationError(
+                "Csak JPG, JPEG, PNG vagy WEBP formátum tölthető fel."
+            )
+
+        return value
+
     def validate(self, attrs):
         instance = getattr(self, "instance", None)
+
+        remove_image = attrs.get("remove_image", False)
+        new_image = attrs.get("image")
+
+        if remove_image and new_image:
+            raise serializers.ValidationError(
+                {
+                    "remove_image": (
+                        "Nem lehet egyszerre új képet feltölteni és képtörlést kérni."
+                    )
+                }
+            )
 
         ingredients = attrs.get("ingredients")
         if ingredients is None and instance is not None:
@@ -297,8 +345,24 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         remove_image = validated_data.pop("remove_image", False)
+        new_image = validated_data.get("image")
+
+        old_image_name = instance.image.name if instance.image else None
+        old_storage = instance.image.storage if instance.image else None
 
         if remove_image:
             instance.image = None
+            updated_instance = super().update(instance, validated_data)
 
-        return super().update(instance, validated_data)
+            if old_image_name and old_storage:
+                old_storage.delete(old_image_name)
+
+            return updated_instance
+
+        updated_instance = super().update(instance, validated_data)
+
+        if new_image and old_image_name and old_storage and updated_instance.image:
+            if updated_instance.image.name != old_image_name:
+                old_storage.delete(old_image_name)
+
+        return updated_instance
