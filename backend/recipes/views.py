@@ -4,13 +4,20 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 
 from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Recipe
 from .permissions import IsOwnerOrReadOnly
-from .serializers import LoginSerializer, RecipeSerializer, RegisterSerializer, UserSerializer
+from .serializers import (
+    LoginSerializer,
+    RecipeSerializer,
+    RegisterSerializer,
+    UserSerializer,
+)
+
 
 @method_decorator(ensure_csrf_cookie, name="dispatch")
 class CsrfTokenView(APIView):
@@ -18,6 +25,7 @@ class CsrfTokenView(APIView):
 
     def get(self, request):
         return Response({"detail": "CSRF cookie set."})
+
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -60,12 +68,12 @@ def me_api(request):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-  serializer_class = RecipeSerializer
-  permission_classes = [IsAuthenticatedOrReadOnly,IsOwnerOrReadOnly]
+    serializer_class = RecipeSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
-  def get_queryset(self):
-      return Recipe.objects.select_related("owner").order_by("-created_at")
-  
-  def perform_create(self, serializer):
-      serializer.save(owner=self.request.user)
-  
+    def get_queryset(self):
+        return Recipe.objects.select_related("owner").order_by("-created_at")
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
