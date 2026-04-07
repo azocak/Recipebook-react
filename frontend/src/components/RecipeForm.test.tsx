@@ -1,8 +1,9 @@
 import { render, screen, waitFor } from "@testing-library/react";
-import type { RecipeFormData } from "../api/types";
-import RecipeForm from "./RecipeForm";
 import userEvent from "@testing-library/user-event";
+
+import type { RecipeFormData, RecipeImageFormData } from "../api/types";
 import { ApiError } from "../api/errors";
+import RecipeForm from "./RecipeForm";
 
 const validData: RecipeFormData = {
   title: "Palacsinta",
@@ -12,10 +13,25 @@ const validData: RecipeFormData = {
   servings: 4,
 };
 
+const previewUrl = "blob:preview-url";
+
+beforeEach(() => {
+  Object.defineProperty(globalThis.URL, "createObjectURL", {
+    writable: true,
+    value: vi.fn(() => previewUrl),
+  });
+
+  Object.defineProperty(globalThis.URL, "revokeObjectURL", {
+    writable: true,
+    value: vi.fn(),
+  });
+});
+
 function setup(
   overrides?: Partial<{
     initialValues: RecipeFormData;
-    onSubmit: (data: RecipeFormData) => Promise<void>;
+    initialImageUrl: string | null;
+    onSubmit: (data: RecipeImageFormData) => Promise<void>;
     submitLabel: string;
   }>,
 ) {
@@ -24,12 +40,30 @@ function setup(
   render(
     <RecipeForm
       initialValues={overrides?.initialValues ?? validData}
+      initialImageUrl={overrides?.initialImageUrl ?? null}
       onSubmit={onSubmit}
       submitLabel={overrides?.submitLabel ?? "Mentés"}
     />,
   );
 
   return { onSubmit };
+}
+
+function createImageFile(
+  name = "recipe.jpg",
+  type = "image/jpeg",
+  size?: number,
+) {
+  const file = new File(["image-content"], name, { type });
+
+  if (typeof size === "number") {
+    Object.defineProperty(file, "size", {
+      value: size,
+      configurable: true,
+    });
+  }
+
+  return file;
 }
 
 async function fillWithValidData() {
@@ -82,6 +116,21 @@ async function submitFormWithInvalidField<K extends keyof RecipeFormData>(
 }
 
 describe("RecipeForm", () => {
+  it("displays the file selector field and the placeholder block", () => {
+    setup({
+      initialValues: {
+        title: "",
+        ingredients: "",
+        instructions: "",
+        cooking_time: 0,
+        servings: 1,
+      },
+    });
+
+    expect(screen.getByLabelText(/receptkép/i)).toBeInTheDocument();
+    expect(screen.getByText("Nincs feltöltött kép")).toBeInTheDocument();
+  });
+
   it.each([
     ["title", "", "A recept neve kötelező."],
     ["title", "ab", "A recept neve legalább 3 karakter legyen."],
@@ -150,7 +199,125 @@ describe("RecipeForm", () => {
     ).toBeInTheDocument();
   });
 
-  it("calls the onSubmit event with the correct data", async () => {
+  it("displays a preview of the new image after it has been uploaded", async () => {
+    const user = userEvent.setup();
+    setup();
+
+    const fileInput = screen.getByLabelText(/receptkép/i);
+    const file = createImageFile();
+
+    await user.upload(fileInput, file);
+
+    expect(
+      screen.getByRole("img", { name: /receptkép előnézet/i }),
+    ).toHaveAttribute("src", previewUrl);
+    expect(globalThis.URL.createObjectURL).toHaveBeenCalledWith(file);
+  });
+
+  it("displays an error if the file is too large", async () => {
+    const user = userEvent.setup();
+    setup();
+
+    const fileInput = screen.getByLabelText(/receptkép/i);
+    const file = createImageFile(
+      "too-large.jpg",
+      "image/jpeg",
+      5 * 1024 * 1024 + 1,
+    );
+
+    await user.upload(fileInput, file);
+
+    expect(
+      screen.getByText("A fájl mérete nem lehet nagyobb 5 MB-nál."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("img", { name: /receptkép előnézet/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("displays an error if the file format is not supported", async () => {
+    const user = userEvent.setup({ applyAccept: false });
+    setup();
+
+    const fileInput = screen.getByLabelText(/receptkép/i);
+    const file = createImageFile("recipe.gif", "image/gif");
+
+    await user.upload(fileInput, file);
+
+    expect(
+      screen.getByText("Csak JPG, JPEG, PNG vagy WEBP formátum tölthető fel."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("img", { name: /receptkép előnézet/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("the placeholder will reappear if the selected image is removed", async () => {
+    const user = userEvent.setup();
+    setup();
+
+    const fileInput = screen.getByLabelText(/receptkép/i);
+    const file = createImageFile();
+
+    await user.upload(fileInput, file);
+    expect(
+      screen.getByRole("img", { name: /receptkép előnézet/i }),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: /kiválasztott kép eltávolítása/i }),
+    );
+
+    expect(
+      screen.queryByRole("img", { name: /receptkép előnézet/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Nincs feltöltött kép")).toBeInTheDocument();
+  });
+
+  it("displays the existing image during editing", () => {
+    setup({
+      initialImageUrl: "http://localhost:8000/media/recipes/existing.jpg",
+    });
+
+    expect(
+      screen.getByRole("img", { name: /receptkép előnézet/i }),
+    ).toHaveAttribute(
+      "src",
+      "http://localhost:8000/media/recipes/existing.jpg",
+    );
+  });
+
+  it("Deleting an existing image displays a placeholder when saving and returns remove_image=true", async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+
+    setup({
+      initialImageUrl: "http://localhost:8000/media/recipes/existing.jpg",
+      onSubmit,
+    });
+
+    await user.click(
+      screen.getByRole("button", { name: /jelenlegi kép törlése mentéskor/i }),
+    );
+
+    expect(
+      screen.getByText("A jelenlegi kép a mentés után törlődni fog."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("img", { name: /receptkép előnézet/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Nincs feltöltött kép")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Mentés" }));
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      ...validData,
+      image: null,
+      remove_image: true,
+    });
+  });
+
+  it("calls onSubmit with the correct data but without an image", async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
 
@@ -169,10 +336,45 @@ describe("RecipeForm", () => {
     await user.click(screen.getByRole("button", { name: "Mentés" }));
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
-    expect(onSubmit).toHaveBeenCalledWith(validData);
+    expect(onSubmit).toHaveBeenCalledWith({
+      ...validData,
+      image: null,
+      remove_image: false,
+    });
   });
 
-  it("call the onSubmit event with the trimmed data", async () => {
+  it("calls onSubmit with the correct data and image", async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+
+    setup({
+      initialValues: {
+        title: "",
+        ingredients: "",
+        instructions: "",
+        cooking_time: 0,
+        servings: 1,
+      },
+      onSubmit,
+    });
+
+    await fillWithValidData();
+
+    const fileInput = screen.getByLabelText(/receptkép/i);
+    const file = createImageFile("recipe.png", "image/png");
+
+    await user.upload(fileInput, file);
+    await user.click(screen.getByRole("button", { name: "Mentés" }));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit).toHaveBeenCalledWith({
+      ...validData,
+      image: file,
+      remove_image: false,
+    });
+  });
+
+  it("sends on the trimmed data", async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
 
@@ -195,7 +397,27 @@ describe("RecipeForm", () => {
       instructions: "Keverd össze és süsd ki serpenyőben.",
       cooking_time: 20,
       servings: 4,
+      image: null,
+      remove_image: false,
     });
+  });
+
+  it("displays a backend image field error", async () => {
+    const user = userEvent.setup();
+
+    const onSubmit = vi.fn().mockRejectedValue(
+      new ApiError("Validation error", 400, {
+        image: ["A fájl mérete nem lehet nagyobb 5 MB-nál."],
+      }),
+    );
+
+    setup({ onSubmit });
+
+    await user.click(screen.getByRole("button", { name: "Mentés" }));
+
+    expect(
+      screen.getByText("A fájl mérete nem lehet nagyobb 5 MB-nál."),
+    ).toBeInTheDocument();
   });
 
   it("displays the backend field error", async () => {
@@ -234,7 +456,7 @@ describe("RecipeForm", () => {
     expect(screen.getByText("Szerverhiba történt.")).toBeInTheDocument();
   });
 
-  it("disables the button while sending", async () => {
+  it("disables the button while saving", async () => {
     let resolvePromise: (() => void) | undefined;
 
     const onSubmit = vi.fn(

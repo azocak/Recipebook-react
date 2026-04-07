@@ -1,7 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
-import RecipeForm from "../components/RecipeForm";
-import type { RecipeFormData } from "../api/types";
+
 import { recipesApi } from "../api/recipes";
+import type { RecipeFormData, RecipeImageFormData } from "../api/types";
+import RecipeForm from "../components/RecipeForm";
 
 const defaultValues: RecipeFormData = {
   title: "",
@@ -14,7 +15,7 @@ const defaultValues: RecipeFormData = {
 export default function NewRecipePage() {
   const navigate = useNavigate();
 
-  async function handleSubmit(data: RecipeFormData) {
+  async function handleSubmit(data: RecipeImageFormData) {
     const createdRecipe = await recipesApi.create(data);
     navigate(`/recipes/${createdRecipe.id}`);
   }
@@ -23,7 +24,7 @@ export default function NewRecipePage() {
     <section className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
       <div className="space-y-6">
         <Link
-          to={`/recipes`}
+          to="/recipes"
           className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-900"
         >
           <span aria-hidden="true">←</span>
@@ -42,6 +43,7 @@ export default function NewRecipePage() {
           <div className="px-6 py-6 sm:px-8">
             <RecipeForm
               initialValues={defaultValues}
+              initialImageUrl={null}
               onSubmit={handleSubmit}
               submitLabel="Recept mentése"
             />

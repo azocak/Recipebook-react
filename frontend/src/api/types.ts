@@ -1,4 +1,4 @@
-export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
+export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export interface User {
   id: number;
@@ -15,6 +15,8 @@ export interface Recipe {
   instructions: string;
   cooking_time: number;
   servings: number;
+  image: string | null;
+  image_url: string | null;
   created_at: string;
 }
 
@@ -24,4 +26,9 @@ export interface RecipeFormData {
   instructions: string;
   cooking_time: number;
   servings: number;
+}
+
+export interface RecipeImageFormData extends RecipeFormData {
+  image?: File | null;
+  remove_image?: boolean;
 }

@@ -1,10 +1,11 @@
-import type { RecipeFormData } from "../api/types";
-import RecipeForm from "../components/RecipeForm";
-import { recipesApi } from "../api/recipes";
 import { Link, useNavigate, useParams } from "react-router-dom";
+
+import { recipesApi } from "../api/recipes";
+import type { RecipeFormData, RecipeImageFormData } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
-import { useRecipe } from "../hooks/useRecipe";
 import { PageStatus } from "../components/PageStatus";
+import RecipeForm from "../components/RecipeForm";
+import { useRecipe } from "../hooks/useRecipe";
 
 export default function EditRecipePage() {
   const { id } = useParams();
@@ -96,7 +97,7 @@ export default function EditRecipePage() {
     servings: recipe.servings,
   };
 
-  async function handleSubmit(data: RecipeFormData) {
+  async function handleSubmit(data: RecipeImageFormData) {
     const updatedRecipe = await recipesApi.update(recipeId, data);
     navigate(`/recipes/${updatedRecipe.id}`);
   }
@@ -124,6 +125,7 @@ export default function EditRecipePage() {
           <div className="px-6 py-6 sm:px-8">
             <RecipeForm
               initialValues={initialValues}
+              initialImageUrl={recipe.image_url}
               onSubmit={handleSubmit}
               submitLabel="Módosítás mentése"
             />
