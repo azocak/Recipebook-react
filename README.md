@@ -263,6 +263,84 @@ UI mód:
 npm run test:ui
 ```
 
+## CI és coverage
+
+A projekt automatikus ellenőrzést használ GitHub Actions segítségével.
+
+A CI a következőket futtatja minden `push` és `pull_request` esetén:
+
+### Frontend
+
+- függőségek telepítése
+- ESLint futtatása
+- Vitest tesztek futtatása coverage riporttal
+
+### Backend
+
+- Python függőségek telepítése
+- Django tesztek futtatása coverage riporttal
+
+## Helyi quality check parancsok
+
+### Frontend
+
+```bash
+cd frontend
+npm run lint
+npm run test:run
+npm run coverage
+```
+
+### Backend
+
+```bash
+cd backend
+coverage erase
+coverage run --branch manage.py test
+coverage report
+coverage html
+coverage xml
+```
+
+## Coverage riportok
+
+### Frontend
+
+A frontend coverage riport a következő mappába készül:
+
+```text
+frontend/coverage
+```
+
+### Backend
+
+A backend HTML coverage riport itt található:
+
+```text
+backend/coverage_html/index.html
+```
+
+A backend XML riport itt található:
+
+```text
+backend/coverage.xml
+```
+
+## Minimum coverage küszöbök
+
+### Frontend
+
+A Vitest konfiguráció jelenleg az alábbi minimum értékeket várja el:
+
+- lines: 60
+- functions: 60
+- statements: 60
+- branches: 50
+
+### Backend
+
+A backend coverage konfiguráció jelenleg legalább 60% összesített lefedettséget vár el.
+
 ## Fejlesztési megjegyzések
 
 - A projekt jelenleg fejlesztés alatt áll.
