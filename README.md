@@ -1,6 +1,6 @@
 # Recipebook React
 
-Modern full-stack receptkezelő webalkalmazás React + TypeScript + Vite frontenddel és Django + Django REST Framework backenddel.
+Modern full-stack receptkezelő webalkalmazás React + TypeScript + Vite frontenddel, valamint Django + Django REST Framework backenddel.
 
 A felhasználók böngészhetik a publikus recepteket, regisztrálhatnak, bejelentkezhetnek, majd saját recepteket hozhatnak létre, szerkeszthetnek és törölhetnek.
 
@@ -14,12 +14,13 @@ A projekt célja egy portfóliószintű full-stack alkalmazás felépítése, am
 - CSRF védelem
 - űrlapvalidáció
 - automatizált frontend és backend tesztelés
+- coverage alapú minőségellenőrzés
 
 ## Fő funkciók
 
 ### Publikus funkciók
 
-- publikus receptlista
+- publikus receptlista megjelenítése
 - recept részleteinek megtekintése
 - regisztráció
 - bejelentkezés
@@ -55,6 +56,7 @@ A projekt célja egy portfóliószintű full-stack alkalmazás felépítése, am
 - django-cors-headers
 - python-dotenv
 - Pillow
+- coverage.py
 
 ## Architektúra röviden
 
@@ -63,42 +65,48 @@ A projekt két külön részből áll:
 - `frontend/` – React + Vite kliensalkalmazás
 - `backend/` – Django + DRF API
 
-A frontend a backenddel HTTP kéréseken keresztül kommunikál.  
-A hitelesítés JWT helyett session alapon működik.  
-A nem biztonságos kérések előtt a frontend CSRF cookie-t kér le, majd `X-CSRFToken` headerrel küldi a tokenet.
+A frontend a backenddel HTTP kéréseken keresztül kommunikál.
+
+A hitelesítés JWT helyett session alapon működik. A nem biztonságos kérések előtt a frontend CSRF cookie-t kér le, majd `X-CSRFToken` headerrel küldi a tokent a backend felé.
 
 ## Fő oldalak
 
 - `/` → átirányítás `/recipes` oldalra
-- `/recipes` – receptlista
-- `/recipes/:id` – recept részletei
-- `/recipes/new` – új recept létrehozása
-- `/recipes/:id/edit` – recept szerkesztése
-- `/login` – bejelentkezés
-- `/register` – regisztráció
+- `/recipes` → receptlista
+- `/recipes/:id` → recept részletei
+- `/recipes/new` → új recept létrehozása
+- `/recipes/:id/edit` → recept szerkesztése
+- `/login` → bejelentkezés
+- `/register` → regisztráció
 
 ## Projektstruktúra
 
 ```text
 Recipebook-react/
+├── .github/
+│   └── workflows/
+│       └── ci.yml
 ├── backend/
 │   ├── config/
 │   ├── recipes/
+│   ├── .coveragerc
 │   ├── .env.example
-│   └── manage.py
+│   ├── manage.py
+│   └── requirements.txt
 ├── frontend/
 │   ├── src/
 │   ├── public/
 │   ├── package.json
+│   ├── package-lock.json
 │   └── vite.config.ts
-├── requirements.txt
+├── .gitignore
 └── README.md
 ```
 
 ## Előfeltételek
 
 - Python 3.12+
-- Node.js 20.19+ vagy 22.12+
+- Node.js 20.19+ vagy újabb
 - npm
 
 ## Telepítés
@@ -117,8 +125,8 @@ cd Recipebook-react
 ```bash
 python -m venv venv
 venv\Scripts\activate
-pip install -r requirements.txt
 cd backend
+pip install -r requirements.txt
 ```
 
 #### Linux / macOS
@@ -126,8 +134,8 @@ cd backend
 ```bash
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
 cd backend
+pip install -r requirements.txt
 ```
 
 ### 3. Backend környezeti változók
@@ -198,12 +206,12 @@ http://127.0.0.1:5173
 - `SECRET_KEY` – Django secret key
 - `DEBUG` – fejlesztői mód
 - `ALLOWED_HOSTS` – engedélyezett hostok
-- `CORS_ALLOWED_ORIGINS` – engedélyezett frontend originek
-- `CSRF_TRUSTED_ORIGINS` – trusted originek CSRF-hez
+- `CORS_ALLOWED_ORIGINS` – engedélyezett frontend origin-ek
+- `CSRF_TRUSTED_ORIGINS` – trusted origin-ek CSRF-hez
 
 ### Frontend (`frontend/.env`)
 
-- `VITE_API_BASE_URL` – backend API alap URL
+- `VITE_API_BASE_URL` – a backend API alap URL-je
 
 ## API végpontok
 
@@ -263,11 +271,55 @@ UI mód:
 npm run test:ui
 ```
 
-## CI és coverage
+## Coverage futtatása
 
-A projekt automatikus ellenőrzést használ GitHub Actions segítségével.
+### Frontend
 
-A CI a következőket futtatja minden `push` és `pull_request` esetén:
+```bash
+cd frontend
+npm run coverage
+```
+
+A frontend coverage riport a következő mappába készül:
+
+```text
+frontend/coverage
+```
+
+### Backend
+
+```bash
+cd backend
+coverage erase
+coverage run --branch manage.py test
+coverage report
+coverage html
+coverage xml
+```
+
+A backend HTML coverage riport itt található:
+
+```text
+backend/coverage_html/index.html
+```
+
+A backend XML riport itt található:
+
+```text
+backend/coverage.xml
+```
+
+## CI és quality checks
+
+A projekt GitHub Actions alapú CI workflow-t használ.
+
+A workflow fájl helye:
+
+```text
+.github/workflows/ci.yml
+```
+
+A CI a következő ellenőrzéseket futtatja megfelelő `push` és `pull_request` események esetén:
 
 ### Frontend
 
@@ -278,7 +330,9 @@ A CI a következőket futtatja minden `push` és `pull_request` esetén:
 ### Backend
 
 - Python függőségek telepítése
-- Django tesztek futtatása coverage riporttal
+- Django tesztek futtatása coverage módban
+- coverage riport kiírása
+- XML coverage riport generálása
 
 ## Helyi quality check parancsok
 
@@ -302,83 +356,39 @@ coverage html
 coverage xml
 ```
 
-## Coverage riportok
+## Validáció és üzleti logika
 
-### Frontend
+### Backend oldalon
 
-A frontend coverage riport a következő mappába készül:
+- egyedi felhasználónév ellenőrzés
+- egyedi email ellenőrzés
+- jelszó megerősítés
+- hibás belépési adatok kezelése
+- csak a tulajdonos szerkesztheti vagy törölheti a saját receptjét
+- egy felhasználón belül nem lehet két azonos nevű recept
+- cím, hozzávalók és elkészítés mezők validálása
+- főzési idő és adag mezők számtartományának ellenőrzése
 
-```text
-frontend/coverage
-```
+### Frontend oldalon
 
-### Backend
+- form hibák megjelenítése
+- API hibák kezelése
+- route védelem vendég és bejelentkezett felhasználók számára
+- CSRF kezelés session alapú hitelesítéshez
 
-A backend HTML coverage riport itt található:
+## Jövőbeli fejlesztési ötletek
 
-```text
-backend/coverage_html/index.html
-```
-
-A backend XML riport itt található:
-
-```text
-backend/coverage.xml
-```
-
-## Minimum coverage küszöbök
-
-### Frontend
-
-A Vitest konfiguráció jelenleg az alábbi minimum értékeket várja el:
-
-- lines: 60
-- functions: 60
-- statements: 60
-- branches: 50
-
-### Backend
-
-A backend coverage konfiguráció jelenleg legalább 60% összesített lefedettséget vár el.
-
-## Fejlesztési megjegyzések
-
-- A projekt jelenleg fejlesztés alatt áll.
-- A frontend és backend külön fut.
-- A hitelesítés session + CSRF modellre épül.
-- A frontend `credentials: "include"` beállítással kommunikál a backenddel.
-- A recept validáció végső forrása a backend serializer.
-
-## Jövőbeli tervek
-
-- recept keresés
-- szűrés és rendezés
+- recept képfeltöltés
+- keresés és szűrés
 - kategóriák és címkék
-- képfeltöltés receptekhez
 - pagination
-- felhasználói profil
-- kedvencek funkció
-- még erősebb tesztlefedettség
-- deployolt demo verzió
+- felhasználói profil oldal
+- deployment production környezetbe
 
-## Miért jó portfólióprojekt?
+## Fejlesztői megjegyzés
 
-Ez a projekt nem csak egyszerű CRUD példa, hanem több fontos full-stack témát is bemutat:
+Ez a projekt portfólió célra készült, és a célja egy jól strukturált, tesztelhető, modern full-stack alkalmazás bemutatása React és Django technológiákkal.
 
-- route védelem
-- session kezelés
-- CSRF védelem
-- validáció frontend és backend oldalon
-- REST API integráció
-- frontend és backend tesztelés
-- tiszta, bővíthető projektstruktúra
+## Licenc
 
-## Használt dokumentációk
-
-- React: https://react.dev/
-- Vite: https://vite.dev/
-- Tailwind CSS: https://tailwindcss.com/
-- Django: https://docs.djangoproject.com/en/6.0/
-- Django REST Framework: https://www.django-rest-framework.org/
-- Vitest: https://vitest.dev/
-- Testing Library: https://testing-library.com/
+Ez a projekt jelenleg nem tartalmaz külön licencfájlt.
