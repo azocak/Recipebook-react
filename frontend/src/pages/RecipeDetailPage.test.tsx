@@ -4,6 +4,7 @@ import RecipeDetailPage from "./RecipeDetailPage";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderRoute } from "../test/router";
+import type { Recipe } from "../api/types";
 
 const mockUseAuth = vi.fn();
 const mockNavigate = vi.fn();
@@ -53,6 +54,15 @@ function setDeleteHook(overrides?: Partial<DeleteHookState>) {
   const state = createDeleteHookState(overrides);
   mockUseDeleteRecipe.mockReturnValue(state);
   return state;
+}
+
+function createRecipe(overrides?: Partial<Recipe>): Recipe {
+  return {
+    ...mockRecipe,
+    image: null,
+    image_url: null,
+    ...overrides,
+  };
 }
 
 function renderRecipeDetailPage(route = "/recipes/1") {
@@ -168,6 +178,47 @@ describe("RecipeDetailPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders the placeholder block when the recipe has no image", () => {
+    setMockUseRecipeState(mockUseRecipe, {
+      recipe: createRecipe({
+        image: null,
+        image_url: null,
+      }),
+      status: "success",
+    });
+
+    renderRecipeDetailPage();
+
+    expect(
+      screen.getByRole("img", { name: "Nincs feltöltött kép" }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole("img", { name: "Palacsinta recept képe" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders the uploaded image when image_url is available", () => {
+    const recipeWithImage = createRecipe({
+      image: "recipes/palacsinta.jpg",
+      image_url: "http://localhost:8000/media/recipes/palacsinta.jpg",
+    });
+
+    setMockUseRecipeState(mockUseRecipe, {
+      recipe: recipeWithImage,
+      status: "success",
+    });
+
+    renderRecipeDetailPage();
+
+    expect(
+      screen.getByRole("img", { name: "Palacsinta recept képe" }),
+    ).toHaveAttribute("src", recipeWithImage.image_url);
+
+    expect(
+      screen.queryByRole("img", { name: "Nincs feltöltött kép" }),
+    ).not.toBeInTheDocument();
+  });
   it("shows the owner action buttons for the recipe owner", () => {
     setAuthenticatedUser(mockUseAuth);
 

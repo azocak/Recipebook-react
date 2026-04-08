@@ -1,5 +1,5 @@
 import { screen, waitFor } from "@testing-library/react";
-import type { RecipeFormData } from "../api/types";
+import type { RecipeFormData, RecipeImageFormData } from "../api/types";
 import NewRecipePage from "./NewRecipePage";
 import { mockRecipe } from "../test/recipe-fixtures";
 import userEvent from "@testing-library/user-event";
@@ -8,6 +8,16 @@ import { renderRoute } from "../test/router";
 const mockNavigate = vi.fn();
 const mockCreateRecipe = vi.fn();
 const mockRecipeFormProps = vi.fn();
+
+const defaultSubmitPayload: RecipeImageFormData = {
+  title: "",
+  ingredients: "",
+  instructions: "",
+  cooking_time: 0,
+  servings: 1,
+};
+
+let mockSubmitPayload: RecipeImageFormData = defaultSubmitPayload;
 
 vi.mock("react-router-dom", async () => {
   const actual =
@@ -30,15 +40,18 @@ vi.mock("../api/recipes", () => ({
 vi.mock("../components/RecipeForm", () => ({
   default: ({
     initialValues,
+    initialImageUrl,
     onSubmit,
     submitLabel,
   }: {
     initialValues: RecipeFormData;
-    onSubmit: (data: RecipeFormData) => Promise<void>;
+    initialImageUrl?: string | null;
+    onSubmit: (data: RecipeImageFormData) => Promise<void>;
     submitLabel: string;
   }) => {
     mockRecipeFormProps({
       initialValues,
+      initialImageUrl,
       submitLabel,
     });
 
@@ -57,11 +70,12 @@ vi.mock("../components/RecipeForm", () => ({
         <div data-testid="initial-servings">
           {String(initialValues.servings)}
         </div>
+        <div data-testid="initial-image-url">{initialImageUrl ?? ""}</div>
 
         <button
           type="button"
           onClick={() => {
-            void onSubmit(initialValues).catch(() => undefined);
+            void onSubmit(mockSubmitPayload).catch(() => undefined);
           }}
         >
           {submitLabel}
@@ -82,9 +96,16 @@ describe("NewRecipePage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCreateRecipe.mockResolvedValue(mockRecipe);
+    mockSubmitPayload = {
+      title: "",
+      ingredients: "",
+      instructions: "",
+      cooking_time: 0,
+      servings: 1,
+    };
   });
 
-  it("renders the page and passes empty default values to RecipeForm", () => {
+  it("renders the page and passes empty default values with null initialImageUrl to RecipeForm", () => {
     renderNewRecipePage();
 
     expect(screen.getByText("RecipeForm mock")).toBeInTheDocument();
@@ -97,6 +118,7 @@ describe("NewRecipePage", () => {
         cooking_time: 0,
         servings: 1,
       },
+      initialImageUrl: null,
       submitLabel: "Recept mentése",
     });
 
@@ -105,10 +127,24 @@ describe("NewRecipePage", () => {
     expect(screen.getByTestId("initial-instructions")).toHaveTextContent("");
     expect(screen.getByTestId("initial-cooking-time")).toHaveTextContent("0");
     expect(screen.getByTestId("initial-servings")).toHaveTextContent("1");
+    expect(screen.getByTestId("initial-image-url")).toHaveTextContent("");
   });
 
-  it("creates a new recipe and navigates to the detail page", async () => {
+  it("forwards the submitted image payload to recipesApi.create and navigates to the detail page", async () => {
     const user = userEvent.setup();
+    const imageFile = new File(["fake-image"], "new-recipe.png", {
+      type: "image/png",
+    });
+
+    mockSubmitPayload = {
+      title: "Új recept",
+      ingredients: "Liszt, tojás",
+      instructions: "Keverd össze.",
+      cooking_time: 25,
+      servings: 2,
+      image: imageFile,
+      remove_image: false,
+    };
 
     mockCreateRecipe.mockResolvedValue({
       ...mockRecipe,
@@ -121,11 +157,13 @@ describe("NewRecipePage", () => {
 
     await waitFor(() => {
       expect(mockCreateRecipe).toHaveBeenCalledWith({
-        title: "",
-        ingredients: "",
-        instructions: "",
-        cooking_time: 0,
-        servings: 1,
+        title: "Új recept",
+        ingredients: "Liszt, tojás",
+        instructions: "Keverd össze.",
+        cooking_time: 25,
+        servings: 2,
+        image: imageFile,
+        remove_image: false,
       });
     });
 
@@ -135,6 +173,14 @@ describe("NewRecipePage", () => {
   it("does not navigate away when recipe creation fails", async () => {
     const user = userEvent.setup();
 
+    mockSubmitPayload = {
+      title: "Hibás mentés",
+      ingredients: "Teszt",
+      instructions: "Teszt instrukció",
+      cooking_time: 15,
+      servings: 3,
+    };
+
     mockCreateRecipe.mockRejectedValue(new Error("Create failed"));
 
     renderNewRecipePage();
@@ -143,14 +189,22 @@ describe("NewRecipePage", () => {
 
     await waitFor(() => {
       expect(mockCreateRecipe).toHaveBeenCalledWith({
-        title: "",
-        ingredients: "",
-        instructions: "",
-        cooking_time: 0,
-        servings: 1,
+        title: "Hibás mentés",
+        ingredients: "Teszt",
+        instructions: "Teszt instrukció",
+        cooking_time: 15,
+        servings: 3,
       });
     });
 
     expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it("renders a back link to the recipes page", () => {
+    renderNewRecipePage();
+
+    expect(
+      screen.getByRole("link", { name: /vissza a receptekhez/i }),
+    ).toHaveAttribute("href", "/recipes");
   });
 });

@@ -3,6 +3,7 @@ import { useAuth } from "../auth/AuthContext";
 import { PageStatus } from "../components/PageStatus";
 import { useDeleteRecipe } from "../hooks/useDeleteRecipe";
 import { useRecipe } from "../hooks/useRecipe";
+import { RecipeImageBlock } from "../components/recipe/RecipeImageBlock";
 
 function formatDateTime(value: string) {
   return new Date(value).toLocaleString("hu-HU", {
@@ -192,6 +193,14 @@ export default function RecipeDetailPage() {
                 {deleteError}
               </div>
             ) : null}
+
+            <section className="space-y-3" aria-label="Receptkép">
+              <RecipeImageBlock
+                imageUrl={recipe.image_url}
+                alt={`${recipe.title} recept képe`}
+                variant="detail"
+              />
+            </section>
 
             <section className="space-y-3">
               <h2 className="text-xl font-semibold text-slate-900">

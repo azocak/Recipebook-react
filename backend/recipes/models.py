@@ -7,7 +7,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 def recipe_image_upload_path(instance, filename):
-    ext = os.path.splitext(filename)[1].lower or ".jpg"
+    ext = os.path.splitext(filename)[1].lower() or ".jpg"
     unique_name = f"{uuid.uuid4().hex}{ext}"
     return os.path.join("recipes", unique_name)
 

@@ -9,6 +9,8 @@ export const mockRecipe: Recipe = {
   instructions: "Keverd össze és  süsd ki.",
   cooking_time: 20,
   servings: 4,
+  image: null,
+  image_url: null,
   created_at: "2026-03-16T10:00:00Z",
 };
 
@@ -23,6 +25,8 @@ export const mockRecipes: Recipe[] = [
     instructions: "Főzd meg lassan.",
     cooking_time: 90,
     servings: 6,
+    image: null,
+    image_url: null,
     created_at: "2026-03-18T12:00:00Z",
   },
 ];

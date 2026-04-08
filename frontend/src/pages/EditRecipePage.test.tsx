@@ -41,14 +41,16 @@ vi.mock("../api/recipes", () => ({
 vi.mock("../components/RecipeForm", () => ({
   default: ({
     initialValues,
+    initialImageUrl,
     onSubmit,
     submitLabel,
   }: {
     initialValues: RecipeFormData;
+    initialImageUrl?: string | null;
     onSubmit: (data: RecipeFormData) => Promise<void>;
     submitLabel: string;
   }) => {
-    mockRecipeFormProps({ initialValues, submitLabel });
+    mockRecipeFormProps({ initialValues, initialImageUrl, submitLabel });
 
     return (
       <div>
@@ -65,6 +67,7 @@ vi.mock("../components/RecipeForm", () => ({
         <div data-testid="initial-servings">
           {String(initialValues.servings)}
         </div>
+        <div data-testid="initial-image-url">{initialImageUrl ?? ""}</div>
 
         <button type="button" onClick={() => void onSubmit(initialValues)}>
           {submitLabel}
@@ -220,7 +223,7 @@ describe("EditRecipePage", () => {
     expect(mockRecipeFormProps).not.toHaveBeenCalled();
   });
 
-  it("passes the initial recipe values to RecipeForm for the owner", () => {
+  it("passes the initial recipe values and initialImageUrl to RecipeForm for the owner", () => {
     renderEditRecipePage();
 
     expect(mockRecipeFormProps).toHaveBeenCalledWith({
@@ -231,6 +234,7 @@ describe("EditRecipePage", () => {
         cooking_time: mockRecipe.cooking_time,
         servings: mockRecipe.servings,
       },
+      initialImageUrl: mockRecipe.image_url,
       submitLabel: "Módosítás mentése",
     });
 
@@ -239,6 +243,36 @@ describe("EditRecipePage", () => {
     );
     expect(screen.getByTestId("initial-cooking-time")).toHaveTextContent("20");
     expect(screen.getByTestId("initial-servings")).toHaveTextContent("4");
+    expect(screen.getByTestId("initial-image-url")).toHaveTextContent(
+      mockRecipe.image_url ?? "",
+    );
+  });
+
+  it("passes null as initialImageUrl when the recipe has no image", () => {
+    setMockUseRecipeState(mockUseRecipe, {
+      recipe: {
+        ...mockRecipe,
+        image: null,
+        image_url: null,
+      },
+      status: "success",
+    });
+
+    renderEditRecipePage();
+
+    expect(mockRecipeFormProps).toHaveBeenCalledWith({
+      initialValues: {
+        title: mockRecipe.title,
+        ingredients: mockRecipe.ingredients,
+        instructions: mockRecipe.instructions,
+        cooking_time: mockRecipe.cooking_time,
+        servings: mockRecipe.servings,
+      },
+      initialImageUrl: null,
+      submitLabel: "Módosítás mentése",
+    });
+
+    expect(screen.getByTestId("initial-image-url")).toHaveTextContent("");
   });
 
   it("submits the updated recipe and navigates to the returned recipe detail page", async () => {

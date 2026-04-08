@@ -33,6 +33,15 @@ vi.mock("../hooks/useDeleteRecipe", () => ({
   useDeleteRecipe: () => mockUseDeleteRecipe(),
 }));
 
+function createRecipe(overrides?: Partial<Recipe>): Recipe {
+  return {
+    ...mockRecipe,
+    image: null,
+    image_url: null,
+    ...overrides,
+  };
+}
+
 function setAuthGuest() {
   mockUseAuth.mockReturnValue(createAuthState());
 }
@@ -74,7 +83,7 @@ function setDeleteHook(
 }
 
 function renderRecipeCard(
-  recipe: Recipe = mockRecipe,
+  recipe: Recipe = createRecipe(),
   options?: {
     onDeleteSuccess?: (deleteRecipeId: number) => void;
   },
@@ -109,6 +118,7 @@ function getDeleteButtonOrThrow() {
     name: `A(z) ${mockRecipe.title} recept törlése`,
   });
 }
+
 describe("RecipeCard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -118,7 +128,8 @@ describe("RecipeCard", () => {
 
     vi.spyOn(window, "confirm").mockReturnValue(true);
   });
-  it("renders the recipe title, owner, metadata and detail link", () => {
+
+  it("renders the recipe title, owner, metadata and detail links", () => {
     renderRecipeCard();
 
     expect(
@@ -128,9 +139,50 @@ describe("RecipeCard", () => {
     expect(screen.getByText(/4 adag/i)).toBeInTheDocument();
     expect(screen.getByText(/Készítette:/i)).toBeInTheDocument();
     expect(screen.getByText(/anna/i)).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("link", {
+        name: "A(z) Palacsinta recept képének megnyitása",
+      }),
+    ).toHaveAttribute("href", "/recipes/1");
+
     expect(
       screen.getByRole("link", { name: "A(z) Palacsinta recept megnyitása" }),
     ).toHaveAttribute("href", "/recipes/1");
+  });
+
+  it("renders the placeholder block when the recipe has no image", () => {
+    renderRecipeCard(
+      createRecipe({
+        image: null,
+        image_url: null,
+      }),
+    );
+
+    expect(
+      screen.getByRole("img", { name: "Nincs feltöltött kép" }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole("img", { name: "Palacsinta recept képe" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders the uploaded image when image_url is available", () => {
+    const recipeWithImage = createRecipe({
+      image: "recipes/palacsinta.jpg",
+      image_url: "http://localhost:8000/media/recipes/palacsinta.jpg",
+    });
+
+    renderRecipeCard(recipeWithImage);
+
+    expect(
+      screen.getByRole("img", { name: "Palacsinta recept képe" }),
+    ).toHaveAttribute("src", recipeWithImage.image_url);
+
+    expect(
+      screen.queryByRole("img", { name: "Nincs feltöltött kép" }),
+    ).not.toBeInTheDocument();
   });
 
   it("does not show edit and delete buttons for guests", () => {
@@ -146,6 +198,7 @@ describe("RecipeCard", () => {
     setAuthUser(otherUser);
 
     renderRecipeCard();
+
     expect(getEditButton()).not.toBeInTheDocument();
     expect(getDeleteButton()).not.toBeInTheDocument();
   });
@@ -156,7 +209,6 @@ describe("RecipeCard", () => {
     renderRecipeCard();
 
     expect(getEditButtonOrThrow()).toBeInTheDocument();
-
     expect(getDeleteButtonOrThrow()).toBeInTheDocument();
   });
 
@@ -182,7 +234,7 @@ describe("RecipeCard", () => {
     setAuthUser(ownerUser);
     setDeleteHook({ deleteRecipe: deleteRecipeMock });
 
-    renderRecipeCard(mockRecipe, { onDeleteSuccess });
+    renderRecipeCard(createRecipe(), { onDeleteSuccess });
 
     await user.click(getDeleteButtonOrThrow());
 
@@ -205,9 +257,10 @@ describe("RecipeCard", () => {
       createDeleteHookState({ deleteRecipe: deleteRecipeMock }),
     );
 
-    renderRecipeCard(mockRecipe, { onDeleteSuccess });
+    renderRecipeCard(createRecipe(), { onDeleteSuccess });
 
     await user.click(getDeleteButtonOrThrow());
+
     await waitFor(() => {
       expect(deleteRecipeMock).toHaveBeenCalledWith(1);
     });
@@ -267,9 +320,7 @@ describe("RecipeCard", () => {
     renderRecipeCard();
 
     expect(getEditButtonOrThrow()).toBeDisabled();
-
     expect(getDeleteButtonOrThrow()).toBeDisabled();
-
     expect(screen.getByText("Törlés...")).toBeInTheDocument();
   });
 });

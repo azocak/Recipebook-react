@@ -116,7 +116,7 @@ async function submitFormWithInvalidField<K extends keyof RecipeFormData>(
 }
 
 describe("RecipeForm", () => {
-  it("displays the file selector field and the placeholder block", () => {
+  it("displays the file selector field and the editor placeholder block", () => {
     setup({
       initialValues: {
         title: "",
@@ -128,6 +128,11 @@ describe("RecipeForm", () => {
     });
 
     expect(screen.getByLabelText(/receptkép/i)).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("img", { name: "Nincs feltöltött kép" }),
+    ).toBeInTheDocument();
+
     expect(screen.getByText("Nincs feltöltött kép")).toBeInTheDocument();
   });
 
@@ -178,6 +183,109 @@ describe("RecipeForm", () => {
 
     expect(
       screen.queryByText("A recept neve kötelező."),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the placeholder after marking the existing image for removal", async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+
+    setup({
+      initialImageUrl: "http://localhost:8000/media/recipes/existing.jpg",
+      onSubmit,
+    });
+
+    expect(
+      screen.getByRole("img", { name: /receptkép előnézet/i }),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: /jelenlegi kép törlése mentéskor/i }),
+    );
+
+    expect(
+      screen.getByText("A jelenlegi kép a mentés után törlődni fog."),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole("img", { name: /receptkép előnézet/i }),
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.getByRole("img", { name: "Nincs feltöltött kép" }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText("Nincs feltöltött kép")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Mentés" }));
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      ...validData,
+      image: null,
+      remove_image: true,
+    });
+  });
+
+  it("shows the placeholder again when the selected preview is removed", async () => {
+    const user = userEvent.setup();
+    setup();
+
+    const fileInput = screen.getByLabelText(/receptkép/i);
+    const file = createImageFile();
+
+    await user.upload(fileInput, file);
+
+    expect(
+      screen.getByRole("img", { name: /receptkép előnézet/i }),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: /kiválasztott kép eltávolítása/i }),
+    );
+
+    expect(
+      screen.queryByRole("img", { name: /receptkép előnézet/i }),
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.getByRole("img", { name: "Nincs feltöltött kép" }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText("Nincs feltöltött kép")).toBeInTheDocument();
+  });
+
+  it("restores the existing image when image removal is undone", async () => {
+    const user = userEvent.setup();
+
+    setup({
+      initialImageUrl: "http://localhost:8000/media/recipes/existing.jpg",
+    });
+
+    await user.click(
+      screen.getByRole("button", { name: /jelenlegi kép törlése mentéskor/i }),
+    );
+
+    expect(
+      screen.getByRole("img", { name: "Nincs feltöltött kép" }),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: /képtörlés visszavonása/i }),
+    );
+
+    expect(
+      screen.getByRole("img", { name: /receptkép előnézet/i }),
+    ).toHaveAttribute(
+      "src",
+      "http://localhost:8000/media/recipes/existing.jpg",
+    );
+
+    expect(
+      screen.queryByRole("img", { name: "Nincs feltöltött kép" }),
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.queryByText("A jelenlegi kép a mentés után törlődni fog."),
     ).not.toBeInTheDocument();
   });
 
@@ -252,28 +360,6 @@ describe("RecipeForm", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("the placeholder will reappear if the selected image is removed", async () => {
-    const user = userEvent.setup();
-    setup();
-
-    const fileInput = screen.getByLabelText(/receptkép/i);
-    const file = createImageFile();
-
-    await user.upload(fileInput, file);
-    expect(
-      screen.getByRole("img", { name: /receptkép előnézet/i }),
-    ).toBeInTheDocument();
-
-    await user.click(
-      screen.getByRole("button", { name: /kiválasztott kép eltávolítása/i }),
-    );
-
-    expect(
-      screen.queryByRole("img", { name: /receptkép előnézet/i }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByText("Nincs feltöltött kép")).toBeInTheDocument();
-  });
-
   it("displays the existing image during editing", () => {
     setup({
       initialImageUrl: "http://localhost:8000/media/recipes/existing.jpg",
@@ -285,36 +371,44 @@ describe("RecipeForm", () => {
       "src",
       "http://localhost:8000/media/recipes/existing.jpg",
     );
+
+    expect(
+      screen.queryByRole("img", { name: "Nincs feltöltött kép" }),
+    ).not.toBeInTheDocument();
   });
 
-  it("Deleting an existing image displays a placeholder when saving and returns remove_image=true", async () => {
-    const onSubmit = vi.fn().mockResolvedValue(undefined);
+  it("shows the newly selected preview instead of the existing image", async () => {
     const user = userEvent.setup();
 
     setup({
       initialImageUrl: "http://localhost:8000/media/recipes/existing.jpg",
-      onSubmit,
     });
 
-    await user.click(
-      screen.getByRole("button", { name: /jelenlegi kép törlése mentéskor/i }),
+    expect(
+      screen.getByRole("img", { name: /receptkép előnézet/i }),
+    ).toHaveAttribute(
+      "src",
+      "http://localhost:8000/media/recipes/existing.jpg",
     );
 
+    const fileInput = screen.getByLabelText(/receptkép/i);
+    const file = createImageFile("new-image.png", "image/png");
+
+    await user.upload(fileInput, file);
+
+    expect(globalThis.URL.createObjectURL).toHaveBeenCalledWith(file);
+
     expect(
-      screen.getByText("A jelenlegi kép a mentés után törlődni fog."),
-    ).toBeInTheDocument();
+      screen.getByRole("img", { name: /receptkép előnézet/i }),
+    ).toHaveAttribute("src", previewUrl);
+
     expect(
-      screen.queryByRole("img", { name: /receptkép előnézet/i }),
+      screen.queryByRole("img", { name: "Nincs feltöltött kép" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("Nincs feltöltött kép")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Mentés" }));
-
-    expect(onSubmit).toHaveBeenCalledWith({
-      ...validData,
-      image: null,
-      remove_image: true,
-    });
+    expect(
+      screen.queryByText("A jelenlegi kép a mentés után törlődni fog."),
+    ).not.toBeInTheDocument();
   });
 
   it("calls onSubmit with the correct data but without an image", async () => {

@@ -3,6 +3,7 @@ import type { Recipe } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import type { MouseEvent } from "react";
 import { useDeleteRecipe } from "../hooks/useDeleteRecipe";
+import { RecipeImageBlock } from "./recipe/RecipeImageBlock";
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -22,6 +23,7 @@ function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
 
   async function handleDeleteButton(e: MouseEvent<HTMLButtonElement>) {
     e.stopPropagation();
+
     const confirmed = window.confirm(
       "Biztosan törölni szeretnéd ezt a receptet?",
     );
@@ -32,6 +34,7 @@ function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
 
     try {
       await deleteRecipe(recipe.id);
+
       if (onDeleteSuccess) {
         onDeleteSuccess(recipe.id);
       } else {
@@ -44,6 +47,18 @@ function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
 
   return (
     <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-md">
+      <Link
+        to={`/recipes/${recipe.id}`}
+        className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+        aria-label={`A(z) ${recipe.title} recept képének megnyitása`}
+      >
+        <RecipeImageBlock
+          imageUrl={recipe.image_url}
+          alt={`${recipe.title} recept képe`}
+          variant="card"
+        />
+      </Link>
+
       <div className="flex h-full flex-col">
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
           <div className="min-w-0">

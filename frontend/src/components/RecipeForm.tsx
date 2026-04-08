@@ -9,6 +9,7 @@ import {
   type RecipeFormErrors,
 } from "../utils/validateRecipeForm";
 import { mapApiErrorsToFormErrors } from "../utils/mapApiErrorsToFormErrors";
+import { RecipeImageBlock } from "./recipe/RecipeImageBlock";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -77,31 +78,6 @@ function getImageValidationError(file: File | null) {
   }
 
   return undefined;
-}
-
-function ImagePlaceholder() {
-  return (
-    <div className="flex aspect-video w-full items-center justify-center rounded-2xl border border-slate-200 bg-slate-100">
-      <div className="flex flex-col items-center gap-3 text-slate-500">
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          className="h-10 w-10"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.7"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <rect x="3" y="5" width="18" height="14" rx="2" />
-          <circle cx="9" cy="10" r="1.5" />
-          <path d="M21 16l-5.5-5.5L7 19" />
-        </svg>
-
-        <p className="text-sm font-medium">Nincs feltöltött kép</p>
-      </div>
-    </div>
-  );
 }
 
 export default function RecipeForm({
@@ -366,7 +342,11 @@ export default function RecipeForm({
                   className="aspect-video w-full rounded-2xl border border-slate-200 object-cover"
                 />
               ) : (
-                <ImagePlaceholder />
+                <RecipeImageBlock
+                  imageUrl={displayedImageUrl}
+                  alt="Receptkép előnézet"
+                  variant="editor"
+                />
               )}
             </div>
 
