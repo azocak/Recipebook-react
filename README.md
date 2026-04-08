@@ -431,7 +431,6 @@ coverage xml
 
 ## Jövőbeli fejlesztési ötletek
 
-- recept képfeltöltés
 - keresés és szűrés
 - kategóriák és címkék
 - pagination
