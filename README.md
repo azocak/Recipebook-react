@@ -30,6 +30,10 @@ A projekt célja egy portfóliószintű full-stack alkalmazás felépítése, am
 - új recept létrehozása
 - saját recept szerkesztése
 - saját recept törlése
+- receptkép feltöltése új recepthez
+- meglévő recept képének utólagos hozzáadása
+- receptkép cseréje
+- receptkép törlése
 - kijelentkezés
 - aktív session kezelése oldalfrissítés után is
 
@@ -232,6 +236,45 @@ http://127.0.0.1:5173
 - `PATCH /api/recipes/:id/`
 - `DELETE /api/recipes/:id/`
 
+## Képfeltöltés feature
+
+A recept entitás opcionális képet is kezel.
+
+### Backend
+
+A backend `ImageField` mezőt használ a képek tárolására, és `image`, `image_url`, valamint `remove_image` mezőket kezel a serializer rétegben.
+
+A létrehozás és szerkesztés `multipart/form-data` kérésekkel történik, ha a felhasználó képet is küld.
+
+A backend biztosítja, hogy:
+
+- csak támogatott képfájlok kerülhessenek mentésre
+- 5 MB feletti fájlok elutasításra kerüljenek
+- csak a recept tulajdonosa módosíthassa a képet
+- csere esetén a régi fájl törlésre kerüljön
+- képtörlés `remove_image=true` használatával is működjön
+
+### Frontend
+
+A frontend oldalon a recept űrlap támogatja:
+
+- fájlválasztást
+- előnézetet feltöltés előtt
+- meglévő kép megjelenítését szerkesztéskor
+- új preview elsőbbségét a meglévő képhez képest
+- a kép mentéskori törlésének jelölését
+- placeholder blokk megjelenítését, ha nincs kép
+
+### Megjelenítés
+
+A receptlista és a részletes nézet is képes megjelenítésre lett felkészítve.
+
+Ha egy recepthez nincs feltöltött kép, akkor a felület semleges szürke placeholder blokkot jelenít meg ikonnal:
+
+- lista nézetben egységes képaránnyal
+- részletes nézetben nagyobb blokkban
+- szerkesztő nézetben a jelenlegi állapot egyértelmű visszajelzésével
+
 ## Tesztek futtatása
 
 ### Backend
@@ -368,6 +411,11 @@ coverage xml
 - egy felhasználón belül nem lehet két azonos nevű recept
 - cím, hozzávalók és elkészítés mezők validálása
 - főzési idő és adag mezők számtartományának ellenőrzése
+- képfeltöltés kezelése `ImageField` mezővel
+- csak támogatott képtípusok fogadása
+- 5 MB feletti képfájlok elutasítása
+- csak a recept tulajdonosa módosíthatja vagy törölheti a képet
+- kép csere esetén a régi fájl törlése
 
 ### Frontend oldalon
 
@@ -375,6 +423,11 @@ coverage xml
 - API hibák kezelése
 - route védelem vendég és bejelentkezett felhasználók számára
 - CSRF kezelés session alapú hitelesítéshez
+- receptkép előnézet megjelenítése feltöltés előtt
+- `FormData` alapú beküldés képfeltöltéshez
+- képeltávolítás támogatása szerkesztéskor
+- placeholder blokk megjelenítése, ha nincs feltöltött kép
+- image mező backend hibáinak megjelenítése
 
 ## Jövőbeli fejlesztési ötletek
 
