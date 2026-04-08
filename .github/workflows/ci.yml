@@ -9,10 +9,15 @@ on:
       - "feature/**"
   pull_request:
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   frontend:
-    name: Frontend lint + test + coverage
+    name: Frontend lint + test + build + coverage
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     defaults:
       run:
@@ -38,9 +43,21 @@ jobs:
       - name: Run frontend tests with coverage
         run: npm run coverage
 
+      - name: Build frontend
+        run: npm run build
+
+      - name: Upload frontend coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage
+          if-no-files-found: ignore
+
   backend:
-    name: Backend tests + coverage
+    name: Backend check + tests + coverage
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     defaults:
       run:
@@ -60,9 +77,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Run Django system checks
+        run: python manage.py check
+
       - name: Run backend tests with coverage
         run: |
           coverage erase
           coverage run --branch manage.py test
           coverage report
           coverage xml
+          coverage html
+
+      - name: Upload backend coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: |
+            backend/coverage.xml
+            backend/coverage_html
+          if-no-files-found: ignore
