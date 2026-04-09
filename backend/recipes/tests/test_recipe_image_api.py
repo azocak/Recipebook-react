@@ -279,3 +279,25 @@ class RecipeImageApiTests(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_recipe_delete_also_deletes_image_file(self):
+        self.login_owner()
+
+        image = self.make_image_file()
+        upload_response = self.client.patch(
+            self.recipe_detail_url(self.recipe.id),
+            {"image": image},
+            format="multipart",
+        )
+
+        self.assertEqual(upload_response.status_code, status.HTTP_200_OK)
+        self.recipe.refresh_from_db()
+
+        image_path = self.recipe.image.path
+        self.assertTrue(os.path.exists(image_path))
+
+        delete_response = self.client.delete(self.recipe_detail_url(self.recipe.id))
+
+        self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(os.path.exists(image_path))
+        self.assertFalse(Recipe.objects.filter(id=self.recipe.id).exists())

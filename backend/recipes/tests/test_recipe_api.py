@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError, transaction
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -155,13 +156,13 @@ class RecipeApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("instructions", response.data)
 
-    def test_same_user_cannot_create_recipe_with_duplicate_title(self):
+    def test_same_user_cannot_create_recipe_with_case_and_whitespace_variant_title(self):
         self.login_owner()
 
         response = self.client.post(
             RECIPES_URL,
             self.valid_recipe_payload(
-                title="Palacsinta",
+                title="  palacsinta  ",
                 ingredients="Liszt, cukor, tej",
                 instructions="Keverd össze és süsd ki rendesen.",
                 cooking_time=25,
@@ -172,6 +173,18 @@ class RecipeApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("title", response.data)
+
+    def test_recipe_model_enforces_trimmed_case_insensitive_unique_title_per_owner(self):
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                Recipe.objects.create(
+                    owner=self.owner,
+                    title="  palacsinta  ",
+                    ingredients="Liszt, cukor, tej",
+                    instructions="Keverd össze és süsd ki rendesen.",
+                    cooking_time=25,
+                    servings=4,
+                )
 
     def test_other_user_can_create_recipe_with_same_title(self):
         self.login_other_user()
@@ -287,3 +300,27 @@ class RecipeApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertTrue(Recipe.objects.filter(id=self.recipe.id).exists())
+
+    def test_recipe_model_rejects_cooking_time_out_of_range_at_database_level(self):
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                Recipe.objects.create(
+                    owner=self.owner,
+                    title="Túl hosszú recept",
+                    ingredients="Liszt, tojás, tej",
+                    instructions="Keverd össze és süsd ki.",
+                    cooking_time=2000,
+                    servings=4,
+                )
+
+    def test_recipe_model_rejects_servings_out_of_range_at_database_level(self):
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                Recipe.objects.create(
+                    owner=self.owner,
+                    title="Túl sok adag",
+                    ingredients="Liszt, tojás, tej",
+                    instructions="Keverd össze és süsd ki.",
+                    cooking_time=20,
+                    servings=0,
+                )

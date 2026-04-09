@@ -1,8 +1,10 @@
 from django.contrib.auth import login, logout
+from django.db import IntegrityError, transaction
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
@@ -74,5 +76,20 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Recipe.objects.select_related("owner").order_by("-created_at")
 
+    def _save_recipe_or_raise_validation_error(self, serializer, **kwargs):
+        try:
+            with transaction.atomic():
+                serializer.save(**kwargs)
+        except IntegrityError as exc:
+            raise ValidationError(
+                {"title": "Már van ilyen nevű recepted."}
+            ) from exc
+
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        self._save_recipe_or_raise_validation_error(
+            serializer,
+            owner=self.request.user,
+        )
+
+    def perform_update(self, serializer):
+        self._save_recipe_or_raise_validation_error(serializer)

@@ -210,3 +210,40 @@ class AuthApiTests(APITestCase):
         response = self.client.post(LOGOUT_URL)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_register_does_not_trim_password(self):
+        payload = self.valid_register_payload(
+            password="  titkos123  ",
+            confirmation="  titkos123  ",
+        )
+
+        response = self.client.post(
+            REGISTER_URL,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.client.logout()
+
+        login_response = self.client.post(
+            LOGIN_URL,
+            {
+                "username": "anna",
+                "password": "  titkos123  ",
+            },
+            format="json",
+        )
+
+        self.assertEqual(login_response.status_code, status.HTTP_200_OK)
+
+    def test_register_applies_django_password_validators(self):
+        response = self.client.post(
+            REGISTER_URL,
+            self.valid_register_payload(password="short", confirmation="short"),
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("password", response.data)

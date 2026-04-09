@@ -1,4 +1,8 @@
 from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth.password_validation import (
+    validate_password as django_validate_password,
+)
+from django.core.exceptions import ValidationError as DjangoValidationError
 from PIL import Image, UnidentifiedImageError
 from rest_framework import serializers
 
@@ -19,8 +23,8 @@ class UserSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.Serializer):
     username = serializers.CharField(min_length=3, max_length=30)
     email = serializers.EmailField()
-    password = serializers.CharField(write_only=True, min_length=6)
-    confirmation = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, trim_whitespace=False)
+    confirmation = serializers.CharField(write_only=True, trim_whitespace=False)
 
     def validate_username(self, value):
         value = value.strip()
@@ -45,21 +49,21 @@ class RegisterSerializer(serializers.Serializer):
         return value
 
     def validate_password(self, value):
-        value = value.strip()
-
-        if not value:
+        if value == "":
             raise serializers.ValidationError("Password is required.")
 
-        if len(value) < 6:
-            raise serializers.ValidationError("Password must be at least 6 characters.")
+        try:
+            django_validate_password(value)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(list(exc.messages))
 
         return value
 
     def validate(self, attrs):
-        password = attrs.get("password")
-        confirmation = attrs.get("confirmation", "").strip()
+        password = attrs.get("password", "")
+        confirmation = attrs.get("confirmation", "")
 
-        if not confirmation:
+        if confirmation == "":
             raise serializers.ValidationError(
                 {"confirmation": "Password confirmation is required."}
             )
@@ -214,42 +218,24 @@ class RecipeSerializer(serializers.ModelSerializer):
         return obj.image.url
 
     def validate_title(self, value):
-        value = value.strip()
-
-        if not value:
-            raise serializers.ValidationError("A recept neve kötelező.")
-
         if len(value) < 3:
             raise serializers.ValidationError(
                 "A recept neve legalább 3 karakter legyen."
             )
-
         return value
 
     def validate_ingredients(self, value):
-        value = value.strip()
-
-        if not value:
-            raise serializers.ValidationError("A hozzávalók mező kötelező.")
-
         if len(value) < 10:
             raise serializers.ValidationError(
                 "A hozzávalók mező legalább 10 karakter legyen."
             )
-
         return value
 
     def validate_instructions(self, value):
-        value = value.strip()
-
-        if not value:
-            raise serializers.ValidationError("Az elkészítés mező kötelező.")
-
         if len(value) < 10:
             raise serializers.ValidationError(
                 "Az elkészítés mező legalább 10 karakter legyen."
             )
-
         return value
 
     def validate_image(self, value):
@@ -308,28 +294,6 @@ class RecipeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"instructions": "Az elkészítés nem lehet ugyanaz, mint a hozzávalók."}
             )
-
-        request = self.context.get("request")
-        title = attrs.get("title")
-
-        if title is None and instance is not None:
-            title = instance.title
-
-        title = (title or "").strip()
-
-        if request and request.user and request.user.is_authenticated and title:
-            queryset = Recipe.objects.filter(
-                owner=request.user,
-                title__iexact=title,
-            )
-
-            if instance is not None:
-                queryset = queryset.exclude(pk=instance.pk)
-
-            if queryset.exists():
-                raise serializers.ValidationError(
-                    {"title": "Már van ilyen nevű recepted."}
-                )
 
         return attrs
 
