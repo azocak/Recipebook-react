@@ -1,6 +1,6 @@
 from django.contrib.auth import authenticate, get_user_model
-from rest_framework import serializers
 from PIL import Image, UnidentifiedImageError
+from rest_framework import serializers
 
 from .models import Recipe
 
@@ -51,9 +51,7 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError("Password is required.")
 
         if len(value) < 6:
-            raise serializers.ValidationError(
-                "Password must be at least 6 characters."
-            )
+            raise serializers.ValidationError("Password must be at least 6 characters.")
 
         return value
 
@@ -268,9 +266,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             image_format = (image.format or "").upper()
             image.verify()
         except (UnidentifiedImageError, OSError, ValueError):
-            raise serializers.ValidationError(
-                "A kiválasztott fájl nem érvényes kép."
-            )
+            raise serializers.ValidationError("A kiválasztott fájl nem érvényes kép.")
         finally:
             if hasattr(value, "seek"):
                 value.seek(0)
@@ -310,9 +306,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
         if ingredients_normalized == instructions_normalized and ingredients_normalized:
             raise serializers.ValidationError(
-                {
-                    "instructions": "Az elkészítés nem lehet ugyanaz, mint a hozzávalók."
-                }
+                {"instructions": "Az elkészítés nem lehet ugyanaz, mint a hozzávalók."}
             )
 
         request = self.context.get("request")

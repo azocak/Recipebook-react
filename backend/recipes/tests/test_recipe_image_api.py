@@ -68,7 +68,9 @@ class RecipeImageApiTests(APITestCase):
         payload.update(overrides)
         return payload
 
-    def make_image_file(self, *, name="recipe.jpg", image_format="JPEG", size=(200, 200)):
+    def make_image_file(
+        self, *, name="recipe.jpg", image_format="JPEG", size=(200, 200)
+    ):
         buffer = io.BytesIO()
         image = Image.new("RGB", size, color="red")
         image.save(buffer, format=image_format)

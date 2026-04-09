@@ -18,24 +18,24 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+
 from recipes.views import (
-  RecipeViewSet,
-  CsrfTokenView,
-  register_api,
-  login_api,
-  logout_api,
-  me_api,
-  )
+    CsrfTokenView,
+    RecipeViewSet,
+    login_api,
+    logout_api,
+    me_api,
+    register_api,
+)
 
 router = DefaultRouter()
 router.register(r"recipes", RecipeViewSet, basename="recipe")
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/', include(router.urls)),
-
+    path("admin/", admin.site.urls),
+    path("api/", include(router.urls)),
     path("api/auth/csrf", CsrfTokenView.as_view(), name="auth-csrf"),
     # Auth API
     path("api/auth/register", register_api, name="api_register"),
