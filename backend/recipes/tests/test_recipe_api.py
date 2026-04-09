@@ -156,7 +156,9 @@ class RecipeApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("instructions", response.data)
 
-    def test_same_user_cannot_create_recipe_with_case_and_whitespace_variant_title(self):
+    def test_same_user_cannot_create_recipe_with_case_and_whitespace_variant_title(
+        self,
+    ):
         self.login_owner()
 
         response = self.client.post(
@@ -174,7 +176,9 @@ class RecipeApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("title", response.data)
 
-    def test_recipe_model_enforces_trimmed_case_insensitive_unique_title_per_owner(self):
+    def test_recipe_model_enforces_trimmed_case_insensitive_unique_title_per_owner(
+        self,
+    ):
         with self.assertRaises(IntegrityError):
             with transaction.atomic():
                 Recipe.objects.create(

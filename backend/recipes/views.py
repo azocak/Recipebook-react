@@ -81,9 +81,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             with transaction.atomic():
                 serializer.save(**kwargs)
         except IntegrityError as exc:
-            raise ValidationError(
-                {"title": "Már van ilyen nevű recepted."}
-            ) from exc
+            raise ValidationError({"title": "Már van ilyen nevű recepted."}) from exc
 
     def perform_create(self, serializer):
         self._save_recipe_or_raise_validation_error(
