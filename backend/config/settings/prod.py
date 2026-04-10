@@ -1,6 +1,7 @@
 from django.core.exceptions import ImproperlyConfigured
 
-from .base import *
+from .base import *  # noqa: F403
+from .base import BASE_DIR, env, env_bool, env_list
 
 SECRET_KEY = env("SECRET_KEY", required=True)
 DEBUG = False

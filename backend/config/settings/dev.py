@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 
-from .base import *
+from .base import *  # noqa: F403
+from .base import BASE_DIR, env, env_list
 
 load_dotenv(BASE_DIR / ".env")
 
