@@ -5,6 +5,12 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { mapApiErrorsToFormErrors } from "../utils/mapApiErrorsToFormErrors";
 import { AuthLayout } from "../components/auth/AuthLayout";
 import { TextInputField } from "../components/auth/TextInputField";
+import {
+  AUTH_GENERAL_ERRORS,
+  AUTH_REQUIRED_ERRORS,
+  AUTH_VALIDATION_ERRORS,
+  REGISTER_ALLOWED_ERROR_FIELDS,
+} from "../constants/auth";
 
 type RegisterFormErrors = {
   username?: string;
@@ -31,20 +37,20 @@ export function RegisterPage() {
     const nextErrors: RegisterFormErrors = {};
 
     if (!username.trim()) {
-      nextErrors.username = "A felhasználónév megadása kötelező.";
+      nextErrors.username = AUTH_REQUIRED_ERRORS.username;
     }
     if (!email.trim()) {
-      nextErrors.email = "Az email cím megadása kötelező.";
+      nextErrors.email = AUTH_REQUIRED_ERRORS.email;
     }
     if (!password) {
-      nextErrors.password = "A jelszó megadása kötelező.";
+      nextErrors.password = AUTH_REQUIRED_ERRORS.password;
     }
     if (!confirmation) {
-      nextErrors.confirmation = "A jelszó megerősítése kötelező.";
+      nextErrors.confirmation = AUTH_REQUIRED_ERRORS.confirmation;
     }
 
     if (password && confirmation && password !== confirmation) {
-      nextErrors.confirmation = "A két jelszó nem egyezik.";
+      nextErrors.confirmation = AUTH_VALIDATION_ERRORS.passwordMismatch;
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -62,8 +68,8 @@ export function RegisterPage() {
       setErrors(
         mapApiErrorsToFormErrors(
           error,
-          ["username", "email", "password", "confirmation"],
-          "A regisztráció sikertelen.",
+          REGISTER_ALLOWED_ERROR_FIELDS,
+          AUTH_GENERAL_ERRORS.registerFailed,
         ) as RegisterFormErrors,
       );
     } finally {

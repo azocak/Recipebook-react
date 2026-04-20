@@ -10,10 +10,20 @@ import {
 } from "../utils/validateRecipeForm";
 import { mapApiErrorsToFormErrors } from "../utils/mapApiErrorsToFormErrors";
 import { RecipeImageBlock } from "./recipe/RecipeImageBlock";
-
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
-const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const ACCEPTED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
+import {
+  RECIPE_ACCEPTED_IMAGE_EXTENSIONS,
+  RECIPE_ACCEPTED_IMAGE_TYPES,
+  RECIPE_ALLOWED_ERROR_FIELDS,
+  RECIPE_COOKING_TIME_MAX,
+  RECIPE_COOKING_TIME_MIN,
+  RECIPE_IMAGE_ACCEPT_ATTR,
+  RECIPE_IMAGE_HELPER_TEXT,
+  RECIPE_IMAGE_MAX_SIZE,
+  RECIPE_SERVINGS_MAX,
+  RECIPE_SERVINGS_MIN,
+  RECIPE_TITLE_MAX,
+  RECIPE_VALIDATION_ERRORS,
+} from "../constants/recipe";
 
 type RecipeImageFormErrors = RecipeFormErrors & {
   image?: string;
@@ -57,11 +67,15 @@ function normalizeRecipeFormData(data: RecipeFormState): RecipeFormData {
 
 function isSupportedImageFile(file: File) {
   const fileName = file.name.toLowerCase();
-  const hasSupportedExtension = ACCEPTED_IMAGE_EXTENSIONS.some((extension) =>
-    fileName.endsWith(extension),
+  const hasSupportedExtension = RECIPE_ACCEPTED_IMAGE_EXTENSIONS.some(
+    (extension) => fileName.endsWith(extension),
   );
 
-  return ACCEPTED_IMAGE_TYPES.has(file.type) || hasSupportedExtension;
+  return (
+    RECIPE_ACCEPTED_IMAGE_TYPES.includes(
+      file.type as (typeof RECIPE_ACCEPTED_IMAGE_TYPES)[number],
+    ) || hasSupportedExtension
+  );
 }
 
 function getImageValidationError(file: File | null) {
@@ -69,12 +83,12 @@ function getImageValidationError(file: File | null) {
     return undefined;
   }
 
-  if (file.size > MAX_IMAGE_SIZE) {
-    return "A fájl mérete nem lehet nagyobb 5 MB-nál.";
+  if (file.size > RECIPE_IMAGE_MAX_SIZE) {
+    return RECIPE_VALIDATION_ERRORS.imageTooLarge;
   }
 
   if (!isSupportedImageFile(file)) {
-    return "Csak JPG, JPEG, PNG vagy WEBP formátum tölthető fel.";
+    return RECIPE_VALIDATION_ERRORS.invalidImageType;
   }
 
   return undefined;
@@ -225,16 +239,8 @@ export default function RecipeForm({
       setErrors(
         mapApiErrorsToFormErrors(
           error,
-          [
-            "title",
-            "ingredients",
-            "instructions",
-            "cooking_time",
-            "servings",
-            "image",
-            "remove_image",
-          ],
-          "Nem sikerült menteni a receptet.",
+          RECIPE_ALLOWED_ERROR_FIELDS,
+          RECIPE_VALIDATION_ERRORS.saveFailed,
         ) as RecipeImageFormErrors,
       );
     } finally {
@@ -257,7 +263,7 @@ export default function RecipeForm({
             value={formData.title}
             onChange={handleChange}
             required
-            maxLength={120}
+            maxLength={RECIPE_TITLE_MAX}
             placeholder="pl. Házi palacsinta"
             error={errors.title}
             hint="Adj rövid, jól érthető címet a receptnek."
@@ -299,8 +305,8 @@ export default function RecipeForm({
               value={formData.cooking_time}
               onChange={handleChange}
               required
-              min={1}
-              max={1440}
+              min={RECIPE_COOKING_TIME_MIN}
+              max={RECIPE_COOKING_TIME_MAX}
               placeholder="pl. 30"
               error={errors.cooking_time}
             />
@@ -313,8 +319,8 @@ export default function RecipeForm({
               value={formData.servings}
               onChange={handleChange}
               required
-              min={1}
-              max={20}
+              min={RECIPE_SERVINGS_MIN}
+              max={RECIPE_SERVINGS_MAX}
               placeholder="pl. 4"
               error={errors.servings}
             />
@@ -329,8 +335,7 @@ export default function RecipeForm({
                 Receptkép
               </label>
               <p className="text-sm text-slate-500">
-                Opcionális. Támogatott formátumok: JPG, JPEG, PNG, WEBP. Maximum
-                méret: 5 MB.
+                {RECIPE_IMAGE_HELPER_TEXT}
               </p>
             </div>
 
@@ -355,7 +360,7 @@ export default function RecipeForm({
                 id="image"
                 name="image"
                 type="file"
-                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                accept={RECIPE_IMAGE_ACCEPT_ATTR}
                 onChange={handleImageChange}
                 className="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 file:mr-4 file:rounded-xl file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-slate-800"
                 aria-invalid={Boolean(errors.image)}

@@ -5,6 +5,11 @@ import { useAuth } from "../auth/AuthContext";
 import { mapApiErrorsToFormErrors } from "../utils/mapApiErrorsToFormErrors";
 import { AuthLayout } from "../components/auth/AuthLayout";
 import { TextInputField } from "../components/auth/TextInputField";
+import {
+  AUTH_GENERAL_ERRORS,
+  AUTH_REQUIRED_ERRORS,
+  LOGIN_ALLOWED_ERROR_FIELDS,
+} from "../constants/auth";
 
 type LoginFormErrors = {
   username?: string;
@@ -37,11 +42,11 @@ export function LoginPage() {
     const nextErrors: LoginFormErrors = {};
 
     if (!username.trim()) {
-      nextErrors.username = "A felhasználónév megadása kötelező.";
+      nextErrors.username = AUTH_REQUIRED_ERRORS.username;
     }
 
     if (!password) {
-      nextErrors.password = "A jelszó megadása kötelező.";
+      nextErrors.password = AUTH_REQUIRED_ERRORS.password;
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -59,8 +64,8 @@ export function LoginPage() {
       setErrors(
         mapApiErrorsToFormErrors(
           error,
-          ["username", "password"],
-          "A bejelentkezés sikertelen.",
+          LOGIN_ALLOWED_ERROR_FIELDS,
+          AUTH_GENERAL_ERRORS.loginFailed,
         ) as LoginFormErrors,
       );
     } finally {

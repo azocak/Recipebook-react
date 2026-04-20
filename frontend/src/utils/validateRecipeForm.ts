@@ -1,4 +1,15 @@
 import type { RecipeFormData } from "../api/types";
+import {
+  RECIPE_COOKING_TIME_MAX,
+  RECIPE_COOKING_TIME_MIN,
+  RECIPE_FIELD_LABELS,
+  RECIPE_SERVINGS_MAX,
+  RECIPE_SERVINGS_MIN,
+  RECIPE_TEXTAREA_MIN,
+  RECIPE_TITLE_MAX,
+  RECIPE_TITLE_MIN,
+  RECIPE_VALIDATION_ERRORS,
+} from "../constants/recipe";
 
 export type RecipeFormErrors = Partial<
   Record<keyof RecipeFormData | "general", string>
@@ -12,20 +23,20 @@ export function validateRecipeForm(data: RecipeFormData): RecipeFormErrors {
   const instructions = data.instructions.trim();
 
   function validateTextarea(
-    key: keyof RecipeFormData,
+    key: keyof Pick<RecipeFormData, "ingredients" | "instructions">,
     value: string,
     fieldLabel: string,
-    min: number,
   ) {
     if (!value) {
       errors[key] = `A(z) ${fieldLabel} mező kötelező.`;
-    } else if (value.length < min) {
-      errors[key] = `A(z) ${fieldLabel} mező legalább ${min} karakter legyen.`;
+    } else if (value.length < RECIPE_TEXTAREA_MIN) {
+      errors[key] =
+        `A(z) ${fieldLabel} mező legalább ${RECIPE_TEXTAREA_MIN} karakter legyen.`;
     }
   }
 
   function validateNumberInput(
-    key: keyof RecipeFormData,
+    key: keyof Pick<RecipeFormData, "cooking_time" | "servings">,
     value: number,
     fieldLabel: string,
     min: number,
@@ -51,30 +62,42 @@ export function validateRecipeForm(data: RecipeFormData): RecipeFormErrors {
 
   if (!title) {
     errors.title = "A recept neve kötelező.";
-  } else if (title.length < 3) {
-    errors.title = "A recept neve legalább 3 karakter legyen.";
-  } else if (title.length > 120) {
-    errors.title = "A recept neve legfeljebb 120 karakter lehet.";
+  } else if (title.length < RECIPE_TITLE_MIN) {
+    errors.title = `A recept neve legalább ${RECIPE_TITLE_MIN} karakter legyen.`;
+  } else if (title.length > RECIPE_TITLE_MAX) {
+    errors.title = `A recept neve legfeljebb ${RECIPE_TITLE_MAX} karakter lehet.`;
   }
 
-  validateTextarea("ingredients", ingredients, "hozzávalók", 10);
-  validateTextarea("instructions", instructions, "elkészítés", 10);
+  validateTextarea("ingredients", ingredients, RECIPE_FIELD_LABELS.ingredients);
+  validateTextarea(
+    "instructions",
+    instructions,
+    RECIPE_FIELD_LABELS.instructions,
+  );
+
   validateNumberInput(
     "cooking_time",
     data.cooking_time,
-    "főzési idő",
-    1,
-    1440,
+    RECIPE_FIELD_LABELS.cooking_time,
+    RECIPE_COOKING_TIME_MIN,
+    RECIPE_COOKING_TIME_MAX,
     "perc",
   );
-  validateNumberInput("servings", data.servings, "adagok száma", 1, 20);
+
+  validateNumberInput(
+    "servings",
+    data.servings,
+    RECIPE_FIELD_LABELS.servings,
+    RECIPE_SERVINGS_MIN,
+    RECIPE_SERVINGS_MAX,
+  );
 
   if (
     ingredients &&
     instructions &&
     ingredients.toLowerCase() === instructions.toLowerCase()
   ) {
-    errors.instructions = "Az elkészítés nem lehet ugyanaz, mint a hozzávalók.";
+    errors.instructions = RECIPE_VALIDATION_ERRORS.duplicateInstructions;
   }
 
   return errors;
