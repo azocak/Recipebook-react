@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 
 import type { RecipeFormData, RecipeImageFormData } from "../api/types";
 
-import { RecipeFormField } from "./recipe/RecipeFormField";
-
 import {
   validateRecipeForm,
   type RecipeFormErrors,
@@ -24,6 +22,9 @@ import {
   RECIPE_TITLE_MAX,
   RECIPE_VALIDATION_ERRORS,
 } from "../constants/recipe";
+import { Button } from "./ui/Button";
+import { Input } from "./ui/Input";
+import { Textarea } from "./ui/Textarea";
 
 type RecipeImageFormErrors = RecipeFormErrors & {
   image?: string;
@@ -255,7 +256,7 @@ export default function RecipeForm({
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         <div className="space-y-6">
-          <RecipeFormField
+          <Input
             id="title"
             label="Recept neve"
             type="text"
@@ -269,8 +270,7 @@ export default function RecipeForm({
             hint="Adj rövid, jól érthető címet a receptnek."
           />
 
-          <RecipeFormField
-            type="textarea"
+          <Textarea
             id="ingredients"
             label="Hozzávalók"
             name="ingredients"
@@ -283,8 +283,7 @@ export default function RecipeForm({
             hint="Például: 20 dkg liszt, 2 db tojás, 3 dl tej..."
           />
 
-          <RecipeFormField
-            type="textarea"
+          <Textarea
             id="instructions"
             label="Elkészítés"
             name="instructions"
@@ -297,7 +296,7 @@ export default function RecipeForm({
           />
 
           <div className="grid gap-5 sm:grid-cols-2">
-            <RecipeFormField
+            <Input
               id="cooking_time"
               label="Főzési idő (perc)"
               type="number"
@@ -311,7 +310,7 @@ export default function RecipeForm({
               error={errors.cooking_time}
             />
 
-            <RecipeFormField
+            <Input
               id="servings"
               label="Adagok száma"
               type="number"
@@ -369,29 +368,25 @@ export default function RecipeForm({
 
               <div className="flex flex-wrap gap-3">
                 {hasSelectedImage ? (
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
                     onClick={handleRemoveSelectedImage}
-                    className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
                   >
                     Kiválasztott kép eltávolítása
-                  </button>
+                  </Button>
                 ) : null}
 
                 {hasExistingImage && !hasSelectedImage ? (
-                  <button
+                  <Button
                     type="button"
+                    variant={removeImage ? "danger" : "secondary"}
                     onClick={handleToggleRemoveExistingImage}
-                    className={`inline-flex items-center justify-center rounded-2xl px-4 py-2 text-sm font-medium transition ${
-                      removeImage
-                        ? "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
-                        : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
-                    }`}
                   >
                     {removeImage
                       ? "Képtörlés visszavonása"
                       : "Jelenlegi kép törlése mentéskor"}
-                  </button>
+                  </Button>
                 ) : null}
               </div>
 
@@ -436,13 +431,14 @@ export default function RecipeForm({
           kötelező.
         </p>
 
-        <button
+        <Button
           type="submit"
-          disabled={submitting}
-          className="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+          variant="primary"
+          size="lg"
+          isLoading={submitting}
         >
           {submitting ? "Mentés..." : submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );
