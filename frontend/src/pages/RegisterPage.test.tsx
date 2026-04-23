@@ -93,7 +93,7 @@ describe("RegisterPage", () => {
     renderRegisterPage();
 
     await user.type(screen.getByLabelText(/Felhasználónév/i), "  anna  ");
-    await user.type(screen.getByLabelText(/Email cím/i), "  rossz-email  ");
+    await user.type(screen.getByLabelText(/Email cím/i), "  anna@gmail.com  ");
     await user.type(screen.getByLabelText(/^Jelszó\s*\*?$/i), "titok123");
     await user.type(
       screen.getByLabelText(/^Jelszó megerősítése\s*\*?$/i),
@@ -105,7 +105,7 @@ describe("RegisterPage", () => {
     await waitFor(() => {
       expect(authState.register).toHaveBeenCalledWith(
         "anna",
-        "rossz-email",
+        "anna@gmail.com",
         "titok123",
         "titok123",
       );
@@ -118,9 +118,48 @@ describe("RegisterPage", () => {
       screen.getByText("Adj meg érvényes email címet."),
     ).toBeInTheDocument();
 
+    expect(
+      screen.queryByText("A regisztráció sikertelen."),
+    ).not.toBeInTheDocument();
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it("shows a general backend error when registration fails without field errors", async () => {
+    const user = userEvent.setup();
+    const authState = setMockAuthState(mockUseAuth, {
+      register: vi.fn().mockRejectedValue(
+        new ApiError("Register failed", 400, {
+          non_field_errors: ["A regisztráció sikertelen."],
+        }),
+      ),
+    });
+
+    renderRegisterPage();
+
+    await user.type(screen.getByLabelText(/Felhasználónév/i), "  anna  ");
+    await user.type(screen.getByLabelText(/Email cím/i), "  anna@gmail.com  ");
+    await user.type(screen.getByLabelText(/^Jelszó\s*\*?$/i), "titok123");
+    await user.type(
+      screen.getByLabelText(/^Jelszó megerősítése\s*\*?$/i),
+      "titok123",
+    );
+
+    await user.click(screen.getByRole("button", { name: "Fiók létrehozása" }));
+
+    await waitFor(() => {
+      expect(authState.register).toHaveBeenCalledWith(
+        "anna",
+        "anna@gmail.com",
+        "titok123",
+        "titok123",
+      );
+    });
+
     expect(screen.getByRole("alert")).toHaveTextContent(
       "A regisztráció sikertelen.",
     );
+
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 

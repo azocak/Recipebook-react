@@ -1,86 +1,67 @@
-import { useState } from "react";
-import { useAuth } from "../auth/AuthContext";
 import { NavLink, useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-import { mapApiErrorsToFormErrors } from "../utils/mapApiErrorsToFormErrors";
+import { useAuth } from "../auth/AuthContext";
 import { AuthLayout } from "../components/auth/AuthLayout";
-import { TextInputField } from "../components/auth/TextInputField";
+import { Input } from "../components/ui/Input";
+import { Button } from "../components/ui/Button";
 import {
   AUTH_GENERAL_ERRORS,
-  AUTH_REQUIRED_ERRORS,
-  AUTH_VALIDATION_ERRORS,
   REGISTER_ALLOWED_ERROR_FIELDS,
 } from "../constants/auth";
-
-type RegisterFormErrors = {
-  username?: string;
-  email?: string;
-  password?: string;
-  confirmation?: string;
-  general?: string;
-};
+import { applyApiErrorsToForm } from "../forms/apiErrorAdapter";
+import { registerSchema, type RegisterSchemaValues } from "../schemas/auth";
 
 export function RegisterPage() {
-  const { register, loading } = useAuth();
+  const { register: registerUser, loading } = useAuth();
   const navigate = useNavigate();
 
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmation, setConfirmation] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors] = useState<RegisterFormErrors>({});
+  const {
+    register,
+    handleSubmit,
+    setError,
+    clearErrors,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterSchemaValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      username: "",
+      email: "",
+      password: "",
+      confirmation: "",
+    },
+    mode: "onSubmit",
+  });
 
-  const handleSubmit: React.SubmitEventHandler<HTMLFormElement> = async (e) => {
-    e.preventDefault();
+  const usernameField = register("username");
+  const emailField = register("email");
+  const passwordField = register("password");
+  const confirmationField = register("confirmation");
 
-    const nextErrors: RegisterFormErrors = {};
+  const isBusy = isSubmitting || loading;
 
-    if (!username.trim()) {
-      nextErrors.username = AUTH_REQUIRED_ERRORS.username;
-    }
-    if (!email.trim()) {
-      nextErrors.email = AUTH_REQUIRED_ERRORS.email;
-    }
-    if (!password) {
-      nextErrors.password = AUTH_REQUIRED_ERRORS.password;
-    }
-    if (!confirmation) {
-      nextErrors.confirmation = AUTH_REQUIRED_ERRORS.confirmation;
-    }
-
-    if (password && confirmation && password !== confirmation) {
-      nextErrors.confirmation = AUTH_VALIDATION_ERRORS.passwordMismatch;
-    }
-
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
-      return;
-    }
-
-    setErrors({});
-
+  async function onSubmit(values: RegisterSchemaValues) {
     try {
-      setSubmitting(true);
-      await register(username.trim(), email.trim(), password, confirmation);
+      await registerUser(
+        values.username,
+        values.email,
+        values.password,
+        values.confirmation,
+      );
       navigate("/recipes", { replace: true });
     } catch (error) {
-      setErrors(
-        mapApiErrorsToFormErrors(
-          error,
-          REGISTER_ALLOWED_ERROR_FIELDS,
-          AUTH_GENERAL_ERRORS.registerFailed,
-        ) as RegisterFormErrors,
-      );
-    } finally {
-      setSubmitting(false);
+      applyApiErrorsToForm<RegisterSchemaValues>(error, setError, {
+        allowedFields: REGISTER_ALLOWED_ERROR_FIELDS,
+        fallbackMessage: AUTH_GENERAL_ERRORS.registerFailed,
+      });
     }
-  };
+  }
 
   return (
     <AuthLayout
       title="Regisztráció"
-      subtitle="Hozd létre a fiókodat a receptkönyv használatához."
+      subtitle="Hozd létre az új fiókodat."
       footer={
         <p>
           Már van fiókod?{" "}
@@ -93,103 +74,94 @@ export function RegisterPage() {
         </p>
       }
     >
-      <form onSubmit={handleSubmit} noValidate className="space-y-5">
-        <TextInputField
+      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
+        <Input
           id="username"
           label="Felhasználónév"
-          name="username"
-          value={username}
-          error={errors.username}
-          required
           autoComplete="username"
-          placeholder="pl. chef123"
-          onChange={(value) => {
-            setUsername(value);
-            setErrors((current) => ({
-              ...current,
-              username: undefined,
-              general: undefined,
-            }));
+          placeholder="Felhasználónév"
+          required
+          error={errors.username?.message}
+          disabled={isBusy}
+          {...usernameField}
+          onChange={(event) => {
+            clearErrors("username");
+            if (errors.root?.server) {
+              clearErrors();
+            }
+            usernameField.onChange(event);
           }}
         />
 
-        <TextInputField
+        <Input
           id="email"
           label="Email cím"
           type="email"
-          name="email"
-          value={email}
-          error={errors.email}
-          required
           autoComplete="email"
-          placeholder="te@pelda.hu"
-          onChange={(value) => {
-            setEmail(value);
-            setErrors((current) => ({
-              ...current,
-              email: undefined,
-              general: undefined,
-            }));
+          placeholder="Email cím"
+          required
+          error={errors.email?.message}
+          disabled={isBusy}
+          {...emailField}
+          onChange={(event) => {
+            clearErrors("email");
+            if (errors.root?.server) {
+              clearErrors();
+            }
+            emailField.onChange(event);
           }}
         />
 
-        <TextInputField
+        <Input
           id="password"
           label="Jelszó"
           type="password"
-          name="password"
-          value={password}
-          error={errors.password}
-          hint="Használj erős, nehezen kitalálható jelszót."
-          required
           autoComplete="new-password"
-          placeholder="••••••••"
-          onChange={(value) => {
-            setPassword(value);
-            setErrors((current) => ({
-              ...current,
-              password: undefined,
-              general: undefined,
-            }));
+          placeholder="Jelszó"
+          required
+          error={errors.password?.message}
+          disabled={isBusy}
+          {...passwordField}
+          onChange={(event) => {
+            clearErrors("password");
+            if (errors.root?.server) {
+              clearErrors();
+            }
+            passwordField.onChange(event);
           }}
         />
 
-        <TextInputField
+        <Input
           id="confirmation"
           label="Jelszó megerősítése"
           type="password"
-          name="confirmation"
-          value={confirmation}
-          error={errors.confirmation}
-          required
           autoComplete="new-password"
-          placeholder="••••••••"
-          onChange={(value) => {
-            setConfirmation(value);
-            setErrors((current) => ({
-              ...current,
-              confirmation: undefined,
-              general: undefined,
-            }));
+          placeholder="Jelszó megerősítése"
+          required
+          error={errors.confirmation?.message}
+          disabled={isBusy}
+          {...confirmationField}
+          onChange={(event) => {
+            clearErrors("confirmation");
+            if (errors.root?.server) {
+              clearErrors();
+            }
+            confirmationField.onChange(event);
           }}
         />
 
-        {errors.general ? (
+        {errors.root?.server?.message ? (
           <div
             className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
             role="alert"
           >
-            {errors.general}
+            {errors.root.server.message}
           </div>
         ) : null}
 
-        <button
-          type="submit"
-          disabled={submitting || loading}
-          className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {submitting || loading ? "Regisztráció..." : "Fiók létrehozása"}
-        </button>
+        <Button type="submit" fullWidth size="lg" isLoading={isBusy}>
+          {isBusy ? "Fiók létrehozása folyamatban..." : "Fiók létrehozása"}
+        </Button>
       </form>
     </AuthLayout>
   );
