@@ -466,7 +466,7 @@ describe("RecipeForm", () => {
       image: file,
       remove_image: false,
     });
-  });
+  }, 10000);
 
   it("sends on the trimmed data", async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);

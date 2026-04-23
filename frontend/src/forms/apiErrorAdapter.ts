@@ -17,6 +17,10 @@ function extractPayload(error: unknown): unknown {
     return error.response.data;
   }
 
+  if (isRecord(error) && "data" in error) {
+    return error.data;
+  }
+
   return error;
 }
 

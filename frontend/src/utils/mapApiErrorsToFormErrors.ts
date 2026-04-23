@@ -23,7 +23,7 @@ function getFirstErrorMessage(value: unknown): string | null {
 
 export function mapApiErrorsToFormErrors(
   error: unknown,
-  allowedFields: string[],
+  allowedFields: readonly string[],
   fallbackMessage: string,
 ): FormErrors {
   const result: FormErrors = {

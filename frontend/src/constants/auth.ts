@@ -1,11 +1,11 @@
-export const LOGIN_ALLOWED_ERROR_FIELDS = ["username", "password"];
+export const LOGIN_ALLOWED_ERROR_FIELDS = ["username", "password"] as const;
 
 export const REGISTER_ALLOWED_ERROR_FIELDS = [
   "username",
   "email",
   "password",
   "confirmation",
-];
+] as const;
 
 export const AUTH_REQUIRED_ERRORS = {
   username: "A felhasználónév megadása kötelező.",

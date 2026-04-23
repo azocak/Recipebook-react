@@ -150,4 +150,29 @@ describe("applyApiErrorsToForm", () => {
       message: "Általános hiba történt.",
     });
   });
+
+  it("it also reads the general error from the data field of its own ApiError-like error", () => {
+    const setError = vi.fn();
+
+    applyApiErrorsToForm(
+      {
+        name: "ApiError",
+        message: "API error 400",
+        status: 400,
+        data: {
+          detail: "Invalid username or password.",
+        },
+      },
+      setError as never,
+      {
+        allowedFields: ["username", "password"],
+        fallbackMessage: "A bejelentkezés sikertelen.",
+      },
+    );
+
+    expect(setError).toHaveBeenCalledWith("root.server", {
+      type: "server",
+      message: "Invalid username or password.",
+    });
+  });
 });
