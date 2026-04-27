@@ -1,16 +1,17 @@
-import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 import { useAuth } from "../auth/AuthContext";
-
-import { mapApiErrorsToFormErrors } from "../utils/mapApiErrorsToFormErrors";
 import { AuthLayout } from "../components/auth/AuthLayout";
-import { TextInputField } from "../components/auth/TextInputField";
-
-type LoginFormErrors = {
-  username?: string;
-  password?: string;
-  general?: string;
-};
+import { Input } from "../components/ui/Input";
+import { Button } from "../components/ui/Button";
+import {
+  AUTH_GENERAL_ERRORS,
+  LOGIN_ALLOWED_ERROR_FIELDS,
+} from "../constants/auth";
+import { applyApiErrorsToForm } from "../forms/apiErrorAdapter";
+import { loginSchema, type LoginSchemaValues } from "../schemas/auth";
 
 type LocationState = {
   from?: {
@@ -23,50 +24,40 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors] = useState<LoginFormErrors>({});
-
   const from =
     (location.state as LocationState | null)?.from?.pathname || "/recipes";
 
-  const handleSubmit: React.SubmitEventHandler<HTMLFormElement> = async (e) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    setError,
+    clearErrors,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginSchemaValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+    },
+    mode: "onSubmit",
+  });
 
-    const nextErrors: LoginFormErrors = {};
+  const usernameField = register("username");
+  const passwordField = register("password");
 
-    if (!username.trim()) {
-      nextErrors.username = "A felhasználónév megadása kötelező.";
-    }
+  const isBusy = isSubmitting || loading;
 
-    if (!password) {
-      nextErrors.password = "A jelszó megadása kötelező.";
-    }
-
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
-      return;
-    }
-
-    setErrors({});
-
+  async function onSubmit(values: LoginSchemaValues) {
     try {
-      setSubmitting(true);
-      await login(username.trim(), password);
+      await login(values.username, values.password);
       navigate(from, { replace: true });
     } catch (error) {
-      setErrors(
-        mapApiErrorsToFormErrors(
-          error,
-          ["username", "password"],
-          "A bejelentkezés sikertelen.",
-        ) as LoginFormErrors,
-      );
-    } finally {
-      setSubmitting(false);
+      applyApiErrorsToForm<LoginSchemaValues>(error, setError, {
+        allowedFields: LOGIN_ALLOWED_ERROR_FIELDS,
+        fallbackMessage: AUTH_GENERAL_ERRORS.loginFailed,
+      });
     }
-  };
+  }
 
   return (
     <AuthLayout
@@ -84,62 +75,56 @@ export function LoginPage() {
         </p>
       }
     >
-      <form onSubmit={handleSubmit} noValidate className="space-y-5">
-        <TextInputField
+      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
+        <Input
           id="username"
           label="Felhasználónév"
-          name="username"
-          value={username}
-          error={errors.username}
-          required
           autoComplete="username"
           placeholder="Felhasználónév"
-          onChange={(value) => {
-            setUsername(value);
-            setErrors((current) => ({
-              ...current,
-              username: undefined,
-              general: undefined,
-            }));
+          required
+          error={errors.username?.message}
+          disabled={isBusy}
+          {...usernameField}
+          onChange={(event) => {
+            clearErrors("username");
+            if (errors.root?.server) {
+              clearErrors();
+            }
+            usernameField.onChange(event);
           }}
         />
 
-        <TextInputField
+        <Input
           id="password"
           label="Jelszó"
           type="password"
-          name="password"
-          value={password}
-          error={errors.password}
-          required
           autoComplete="current-password"
           placeholder="Jelszó"
-          onChange={(value) => {
-            setPassword(value);
-            setErrors((current) => ({
-              ...current,
-              password: undefined,
-              general: undefined,
-            }));
+          required
+          error={errors.password?.message}
+          disabled={isBusy}
+          {...passwordField}
+          onChange={(event) => {
+            clearErrors("password");
+            if (errors.root?.server) {
+              clearErrors();
+            }
+            passwordField.onChange(event);
           }}
         />
 
-        {errors.general ? (
+        {errors.root?.server?.message ? (
           <div
             className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
             role="alert"
           >
-            {errors.general}
+            {errors.root.server.message}
           </div>
         ) : null}
 
-        <button
-          type="submit"
-          disabled={submitting || loading}
-          className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {submitting || loading ? "Bejelentkezés folyamatban..." : "Belépés"}
-        </button>
+        <Button type="submit" fullWidth size="lg" isLoading={isBusy}>
+          {isBusy ? "Bejelentkezés folyamatban..." : "Belépés"}
+        </Button>
       </form>
     </AuthLayout>
   );
