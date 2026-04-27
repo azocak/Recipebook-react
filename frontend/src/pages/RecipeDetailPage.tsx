@@ -2,8 +2,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { PageStatus } from "../components/PageStatus";
 import { useDeleteRecipe } from "../hooks/useDeleteRecipe";
-import { useRecipe } from "../hooks/useRecipe";
 import { RecipeImageBlock } from "../components/recipe/RecipeImageBlock";
+import { useRecipeQuery } from "../hooks/queries/useRecipeQuery";
 
 function formatDateTime(value: string) {
   return new Date(value).toLocaleString("hu-HU", {
@@ -20,7 +20,7 @@ export default function RecipeDetailPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const { recipe, status, errorMessage } = useRecipe(id);
+  const { recipe, status, errorMessage } = useRecipeQuery(id);
   const { deleting, deleteError, deleteRecipe } = useDeleteRecipe();
 
   if (status === "loading") {
