@@ -32,7 +32,7 @@ export const RECIPE_ALLOWED_ERROR_FIELDS = [
   "servings",
   "image",
   "remove_image",
-];
+] as const;
 
 export const RECIPE_FIELD_LABELS = {
   ingredients: "hozzávalók",

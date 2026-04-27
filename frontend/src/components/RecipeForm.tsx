@@ -1,12 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 
 import type { RecipeFormData, RecipeImageFormData } from "../api/types";
 
-import {
-  validateRecipeForm,
-  type RecipeFormErrors,
-} from "../utils/validateRecipeForm";
-import { mapApiErrorsToFormErrors } from "../utils/mapApiErrorsToFormErrors";
 import { RecipeImageBlock } from "./recipe/RecipeImageBlock";
 import {
   RECIPE_ACCEPTED_IMAGE_EXTENSIONS,
@@ -25,11 +20,18 @@ import {
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Textarea } from "./ui/Textarea";
-
-type RecipeImageFormErrors = RecipeFormErrors & {
-  image?: string;
-  remove_image?: string;
-};
+import {
+  getRecipeFormInitialState,
+  type RecipeFormState,
+} from "../forms/getRecipeFormInitialState";
+import { useForm, useWatch } from "react-hook-form";
+import {
+  recipeSchema,
+  type RecipeSchemaInputValues,
+  type RecipeSchemaValues,
+} from "../schemas/recipe";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { applyApiErrorsToForm } from "../forms/apiErrorAdapter";
 
 type RecipeFormProps = {
   initialValues: RecipeFormData;
@@ -37,34 +39,6 @@ type RecipeFormProps = {
   onSubmit: (data: RecipeImageFormData) => Promise<void>;
   submitLabel: string;
 };
-
-type RecipeFormState = {
-  title: string;
-  ingredients: string;
-  instructions: string;
-  cooking_time: string;
-  servings: string;
-};
-
-function toFormState(values: RecipeFormData): RecipeFormState {
-  return {
-    title: values.title,
-    ingredients: values.ingredients,
-    instructions: values.instructions,
-    cooking_time: String(values.cooking_time),
-    servings: String(values.servings),
-  };
-}
-
-function normalizeRecipeFormData(data: RecipeFormState): RecipeFormData {
-  return {
-    title: data.title.trim(),
-    ingredients: data.ingredients.trim(),
-    instructions: data.instructions.trim(),
-    cooking_time: Number(data.cooking_time),
-    servings: Number(data.servings),
-  };
-}
 
 function isSupportedImageFile(file: File) {
   const fileName = file.name.toLowerCase();
@@ -101,36 +75,65 @@ export default function RecipeForm({
   onSubmit,
   submitLabel,
 }: RecipeFormProps) {
-  const [formData, setFormData] = useState<RecipeFormState>(
-    toFormState(initialValues),
-  );
-  const [errors, setErrors] = useState<RecipeImageFormErrors>({});
-  const [submitting, setSubmitting] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [removeImage, setRemoveImage] = useState(false);
+  const {
+    register,
+    reset,
+    control,
+    handleSubmit: formHandleSubmit,
+    setValue,
+    setError,
+    clearErrors,
+    formState: { errors, isSubmitting },
+  } = useForm<RecipeSchemaInputValues, undefined, RecipeSchemaValues>({
+    resolver: zodResolver(recipeSchema),
+    defaultValues: {
+      ...getRecipeFormInitialState(initialValues),
+      image: undefined,
+      remove_image: false,
+    },
+    mode: "onSubmit",
+  });
+
+  const selectedImage =
+    useWatch({
+      control,
+      name: "image",
+    }) ?? null;
+
+  const removeImage =
+    useWatch({
+      control,
+      name: "remove_image",
+    }) ?? false;
 
   useEffect(() => {
-    setFormData(toFormState(initialValues));
-    setErrors({});
-    setSelectedImage(null);
-    setPreviewUrl(null);
-    setRemoveImage(false);
-  }, [initialValues, initialImageUrl]);
+    register("image");
+    register("remove_image");
+  }, [register]);
 
   useEffect(() => {
+    reset({
+      ...getRecipeFormInitialState(initialValues),
+      image: undefined,
+      remove_image: false,
+    });
+  }, [initialValues, initialImageUrl, reset]);
+
+  const previewUrl = useMemo(() => {
     if (!selectedImage) {
-      setPreviewUrl(null);
-      return;
+      return null;
     }
 
-    const objectUrl = URL.createObjectURL(selectedImage);
-    setPreviewUrl(objectUrl);
-
-    return () => {
-      URL.revokeObjectURL(objectUrl);
-    };
+    return URL.createObjectURL(selectedImage);
   }, [selectedImage]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const displayedImageUrl = useMemo(() => {
     if (previewUrl) {
@@ -144,30 +147,19 @@ export default function RecipeForm({
     return null;
   }, [previewUrl, removeImage, initialImageUrl]);
 
-  function clearImageErrors() {
-    setErrors((prev) => ({
-      ...prev,
-      image: undefined,
-      remove_image: undefined,
-      general: undefined,
-    }));
+  function clearFieldError(name: keyof RecipeFormState) {
+    clearErrors(name);
+    if (errors.root?.server) {
+      clearErrors();
+    }
   }
 
-  function handleChange(
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) {
-    const { name, value } = event.target;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    setErrors((prev) => ({
-      ...prev,
-      [name]: undefined,
-      general: undefined,
-    }));
+  function clearImageErrors() {
+    clearErrors("image");
+    clearErrors("remove_image");
+    if (errors.root?.server) {
+      clearErrors();
+    }
   }
 
   function handleImageChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -176,60 +168,60 @@ export default function RecipeForm({
     clearImageErrors();
 
     if (!file) {
-      setSelectedImage(null);
+      setValue("image", undefined, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
       return;
     }
 
     const imageError = getImageValidationError(file);
 
     if (imageError) {
-      setSelectedImage(null);
-      setErrors((prev) => ({
-        ...prev,
-        image: imageError,
-      }));
+      setValue("image", undefined, {
+        shouldDirty: true,
+        shouldValidate: false,
+      });
+      setError("image", {
+        type: "manual",
+        message: imageError,
+      });
       event.target.value = "";
       return;
     }
 
-    setSelectedImage(file);
-    setRemoveImage(false);
+    setValue("image", file, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    setValue("remove_image", false, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   }
 
   function handleRemoveSelectedImage() {
-    setSelectedImage(null);
     clearImageErrors();
+    setValue("image", undefined, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   }
 
   function handleToggleRemoveExistingImage() {
-    setRemoveImage((prev) => !prev);
+    const nextValue = !removeImage;
+
     clearImageErrors();
+
+    setValue("remove_image", nextValue, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    const normalizedData = normalizeRecipeFormData(formData);
-    const clientErrors: RecipeImageFormErrors = {
-      ...validateRecipeForm(normalizedData),
-    };
-
-    const imageError = getImageValidationError(selectedImage);
-
-    if (imageError) {
-      clientErrors.image = imageError;
-    }
-
-    if (Object.keys(clientErrors).length > 0) {
-      setErrors(clientErrors);
-      return;
-    }
-
-    setErrors({});
-    setSubmitting(true);
-
+  const submitForm = formHandleSubmit(async (values) => {
     const payload: RecipeImageFormData = {
-      ...normalizedData,
+      ...values,
       image: selectedImage,
       remove_image: removeImage,
     };
@@ -237,62 +229,69 @@ export default function RecipeForm({
     try {
       await onSubmit(payload);
     } catch (error) {
-      setErrors(
-        mapApiErrorsToFormErrors(
-          error,
-          RECIPE_ALLOWED_ERROR_FIELDS,
-          RECIPE_VALIDATION_ERRORS.saveFailed,
-        ) as RecipeImageFormErrors,
-      );
-    } finally {
-      setSubmitting(false);
+      applyApiErrorsToForm<RecipeSchemaInputValues>(error, setError, {
+        allowedFields: RECIPE_ALLOWED_ERROR_FIELDS,
+        fallbackMessage: RECIPE_VALIDATION_ERRORS.saveFailed,
+      });
     }
-  }
+  });
+
+  const titleField = register("title");
+  const ingredientsField = register("ingredients");
+  const instructionsField = register("instructions");
+  const cookingTimeField = register("cooking_time");
+  const servingsField = register("servings");
 
   const hasExistingImage = Boolean(initialImageUrl);
   const hasSelectedImage = Boolean(selectedImage);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+    <form onSubmit={submitForm} className="space-y-6" noValidate>
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         <div className="space-y-6">
           <Input
             id="title"
             label="Recept neve"
             type="text"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
             required
             maxLength={RECIPE_TITLE_MAX}
             placeholder="pl. Házi palacsinta"
-            error={errors.title}
+            error={errors.title?.message}
             hint="Adj rövid, jól érthető címet a receptnek."
+            {...titleField}
+            onChange={(event) => {
+              clearFieldError("title");
+              titleField.onChange(event);
+            }}
           />
 
           <Textarea
             id="ingredients"
             label="Hozzávalók"
-            name="ingredients"
-            value={formData.ingredients}
-            onChange={handleChange}
             required
             rows={6}
             placeholder="Írd le a hozzávalókat, lehetőleg soronként."
-            error={errors.ingredients}
+            error={errors.ingredients?.message}
             hint="Például: 20 dkg liszt, 2 db tojás, 3 dl tej..."
+            {...ingredientsField}
+            onChange={(event) => {
+              clearFieldError("ingredients");
+              ingredientsField.onChange(event);
+            }}
           />
 
           <Textarea
             id="instructions"
             label="Elkészítés"
-            name="instructions"
-            value={formData.instructions}
-            onChange={handleChange}
             required
             rows={8}
             placeholder="Írd le lépésről lépésre az elkészítést."
-            error={errors.instructions}
+            error={errors.instructions?.message}
+            {...instructionsField}
+            onChange={(event) => {
+              clearFieldError("instructions");
+              instructionsField.onChange(event);
+            }}
           />
 
           <div className="grid gap-5 sm:grid-cols-2">
@@ -300,28 +299,32 @@ export default function RecipeForm({
               id="cooking_time"
               label="Főzési idő (perc)"
               type="number"
-              name="cooking_time"
-              value={formData.cooking_time}
-              onChange={handleChange}
               required
               min={RECIPE_COOKING_TIME_MIN}
               max={RECIPE_COOKING_TIME_MAX}
               placeholder="pl. 30"
-              error={errors.cooking_time}
+              error={errors.cooking_time?.message}
+              {...cookingTimeField}
+              onChange={(event) => {
+                clearFieldError("cooking_time");
+                cookingTimeField.onChange(event);
+              }}
             />
 
             <Input
               id="servings"
               label="Adagok száma"
               type="number"
-              name="servings"
-              value={formData.servings}
-              onChange={handleChange}
               required
               min={RECIPE_SERVINGS_MIN}
               max={RECIPE_SERVINGS_MAX}
               placeholder="pl. 4"
-              error={errors.servings}
+              error={errors.servings?.message}
+              {...servingsField}
+              onChange={(event) => {
+                clearFieldError("servings");
+                servingsField.onChange(event);
+              }}
             />
           </div>
 
@@ -396,19 +399,19 @@ export default function RecipeForm({
                 </p>
               ) : null}
 
-              {errors.image ? (
+              {errors.image?.message ? (
                 <p
                   id="image-error"
                   className="text-sm text-red-600"
                   role="alert"
                 >
-                  {errors.image}
+                  {errors.image.message}
                 </p>
               ) : null}
 
               {errors.remove_image ? (
                 <p className="text-sm text-red-600" role="alert">
-                  {errors.remove_image}
+                  {errors.remove_image.message}
                 </p>
               ) : null}
             </div>
@@ -416,12 +419,12 @@ export default function RecipeForm({
         </div>
       </div>
 
-      {errors.general ? (
+      {errors.root?.server?.message ? (
         <div
           className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
           role="alert"
         >
-          {errors.general}
+          {errors.root.server.message}
         </div>
       ) : null}
 
@@ -435,9 +438,9 @@ export default function RecipeForm({
           type="submit"
           variant="primary"
           size="lg"
-          isLoading={submitting}
+          isLoading={isSubmitting}
         >
-          {submitting ? "Mentés..." : submitLabel}
+          {isSubmitting ? "Mentés..." : submitLabel}
         </Button>
       </div>
     </form>

@@ -152,3 +152,4 @@ export const recipeSchema = z
   );
 
 export type RecipeSchemaValues = z.infer<typeof recipeSchema>;
+export type RecipeSchemaInputValues = z.input<typeof recipeSchema>;
