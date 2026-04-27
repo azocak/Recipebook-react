@@ -5,14 +5,17 @@ import type { RecipeFormData, RecipeImageFormData } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { PageStatus } from "../components/PageStatus";
 import RecipeForm from "../components/RecipeForm";
-import { useRecipe } from "../hooks/useRecipe";
+import { useRecipeQuery } from "../hooks/queries/useRecipeQuery";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "../lib/queryKeys";
 
 export default function EditRecipePage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  const { recipe, status, errorMessage } = useRecipe(id);
+  const { recipe, status, errorMessage } = useRecipeQuery(id);
 
   if (status === "loading") {
     return (
@@ -99,6 +102,23 @@ export default function EditRecipePage() {
 
   async function handleSubmit(data: RecipeImageFormData) {
     const updatedRecipe = await recipesApi.update(recipeId, data);
+
+    queryClient.setQueryData(
+      queryKeys.recipes.detail(updatedRecipe.id),
+      updatedRecipe,
+    );
+
+    if (updatedRecipe.id !== recipeId) {
+      queryClient.setQueryData(
+        queryKeys.recipes.detail(recipeId),
+        updatedRecipe,
+      );
+    }
+
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.recipes.lists(),
+    });
+
     navigate(`/recipes/${updatedRecipe.id}`);
   }
 
