@@ -1,49 +1,40 @@
-import { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
-import { recipesApi } from "../api/recipes";
+
 import type { Recipe } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { PageStatus } from "../components/PageStatus";
 import RecipeCard from "../components/RecipeCard";
+import { useRecipesQuery } from "../hooks/queries/useRecipesQuery";
+import { queryKeys } from "../lib/queryKeys";
 import { getApiErrorMessage } from "../utils/getApiErrorMessage";
 
 function RecipesPage() {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchRecipes = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = await recipesApi.getAll();
-      setRecipes(data);
-    } catch (err) {
-      setError(getApiErrorMessage(err, "Nem sikerült betölteni a recepteket."));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void fetchRecipes();
-  }, [fetchRecipes]);
+  const {
+    data: recipes = [],
+    error,
+    isError,
+    isPending,
+    refetch,
+  } = useRecipesQuery();
 
   function handleCreateClick() {
     navigate("/recipes/new");
   }
 
   function handleRecipeDeleted(deletedRecipeId: number) {
-    setRecipes((prev) =>
-      prev.filter((recipe) => recipe.id !== deletedRecipeId),
+    queryClient.setQueryData<Recipe[]>(
+      queryKeys.recipes.list(),
+      (currentRecipes = []) =>
+        currentRecipes.filter((recipe) => recipe.id !== deletedRecipeId),
     );
   }
 
-  if (loading) {
+  if (isPending) {
     return (
       <PageStatus
         title="Receptek betöltése..."
@@ -52,14 +43,17 @@ function RecipesPage() {
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
       <PageStatus
         title="Nem sikerült betölteni a recepteket."
-        description={error}
+        description={getApiErrorMessage(
+          error,
+          "Nem sikerült betölteni a recepteket.",
+        )}
         variant="error"
         actionLabel="Újrapróbálás"
-        onAction={() => void fetchRecipes()}
+        onAction={() => void refetch()}
       />
     );
   }

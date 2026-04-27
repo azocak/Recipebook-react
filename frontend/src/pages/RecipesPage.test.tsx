@@ -5,6 +5,8 @@ import { ApiError } from "../api/errors";
 import userEvent from "@testing-library/user-event";
 import { mockRecipes } from "../test/recipe-fixtures";
 import { renderRoute } from "../test/router";
+import { createTestQueryClient } from "../test/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
 
 const mockUseAuth = vi.fn();
 const mockGetAll = vi.fn();
@@ -50,10 +52,20 @@ vi.mock("../components/RecipeCard", () => ({
 }));
 
 function renderRecipesPage() {
-  return renderRoute(<RecipesPage />, {
-    path: "/recipes",
-    entry: "/recipes",
-  });
+  const queryClient = createTestQueryClient();
+
+  return {
+    queryClient,
+    ...renderRoute(
+      <QueryClientProvider client={queryClient}>
+        <RecipesPage />
+      </QueryClientProvider>,
+      {
+        path: "/recipes",
+        entry: "/recipes",
+      },
+    ),
+  };
 }
 
 async function renderPageWithRecipes({
