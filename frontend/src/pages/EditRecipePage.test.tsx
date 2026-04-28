@@ -274,7 +274,6 @@ describe("EditRecipePage", () => {
 
     const updatedRecipe = {
       ...mockRecipe,
-      id: 7,
       title: "Frissített palacsinta",
     };
 
@@ -296,10 +295,10 @@ describe("EditRecipePage", () => {
       });
     });
 
-    expect(queryClient.getQueryData(queryKeys.recipes.detail(7))).toEqual(
+    expect(queryClient.getQueryData(queryKeys.recipes.detail(1))).toEqual(
       updatedRecipe,
     );
 
-    expect(mockNavigate).toHaveBeenCalledWith("/recipes/7");
+    expect(mockNavigate).toHaveBeenCalledWith(`/recipes/${updatedRecipe.id}`);
   });
 });

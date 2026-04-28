@@ -1,21 +1,20 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 
-import { recipesApi } from "../api/recipes";
 import type { RecipeFormData, RecipeImageFormData } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { PageStatus } from "../components/PageStatus";
 import RecipeForm from "../components/RecipeForm";
 import { useRecipeQuery } from "../hooks/queries/useRecipeQuery";
-import { useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "../lib/queryKeys";
+
+import { useUpdateRecipeMutation } from "../hooks/mutations/useUpdateRecipeMutation";
 
 export default function EditRecipePage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
 
   const { recipe, status, errorMessage } = useRecipeQuery(id);
+  const updateRecipeMutation = useUpdateRecipeMutation();
 
   if (status === "loading") {
     return (
@@ -101,22 +100,13 @@ export default function EditRecipePage() {
   };
 
   async function handleSubmit(data: RecipeImageFormData) {
-    const updatedRecipe = await recipesApi.update(recipeId, data);
-
-    queryClient.setQueryData(
-      queryKeys.recipes.detail(updatedRecipe.id),
-      updatedRecipe,
-    );
-
-    if (updatedRecipe.id !== recipeId) {
-      queryClient.setQueryData(
-        queryKeys.recipes.detail(recipeId),
-        updatedRecipe,
-      );
+    if (!recipeId) {
+      return;
     }
 
-    void queryClient.invalidateQueries({
-      queryKey: queryKeys.recipes.lists(),
+    const updatedRecipe = await updateRecipeMutation.mutateAsync({
+      recipeId,
+      data,
     });
 
     navigate(`/recipes/${updatedRecipe.id}`);
