@@ -1,8 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
 
-import { recipesApi } from "../api/recipes";
 import type { RecipeFormData, RecipeImageFormData } from "../api/types";
 import RecipeForm from "../components/RecipeForm";
+import { useCreateRecipeMutation } from "../hooks/mutations/useCreateRecipeMutation";
 
 const defaultValues: RecipeFormData = {
   title: "",
@@ -14,9 +14,11 @@ const defaultValues: RecipeFormData = {
 
 export default function NewRecipePage() {
   const navigate = useNavigate();
+  const createRecipeMutation = useCreateRecipeMutation();
 
   async function handleSubmit(data: RecipeImageFormData) {
-    const createdRecipe = await recipesApi.create(data);
+    const createdRecipe = await createRecipeMutation.mutateAsync(data);
+
     navigate(`/recipes/${createdRecipe.id}`);
   }
 
