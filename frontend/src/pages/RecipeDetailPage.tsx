@@ -1,9 +1,10 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { PageStatus } from "../components/PageStatus";
-import { useDeleteRecipe } from "../hooks/useDeleteRecipe";
 import { RecipeImageBlock } from "../components/recipe/RecipeImageBlock";
 import { useRecipeQuery } from "../hooks/queries/useRecipeQuery";
+import { useDeleteRecipeMutation } from "../hooks/mutations/useDeleteRecipeMutation";
+import { getApiErrorMessage } from "../utils/getApiErrorMessage";
 
 function formatDateTime(value: string) {
   return new Date(value).toLocaleString("hu-HU", {
@@ -21,7 +22,16 @@ export default function RecipeDetailPage() {
   const { user } = useAuth();
 
   const { recipe, status, errorMessage } = useRecipeQuery(id);
-  const { deleting, deleteError, deleteRecipe } = useDeleteRecipe();
+  const deleteRecipeMutation = useDeleteRecipeMutation();
+
+  const deleting = deleteRecipeMutation.isPending;
+
+  const deleteError = deleteRecipeMutation.isError
+    ? getApiErrorMessage(
+        deleteRecipeMutation.error,
+        "Nem sikerült törölni a receptet.",
+      )
+    : null;
 
   if (status === "loading") {
     return (
@@ -87,6 +97,10 @@ export default function RecipeDetailPage() {
   const isOwner = !!user && user.id === recipe.owner;
 
   async function handleDelete() {
+    if (!recipe) {
+      return;
+    }
+
     const confirmed = window.confirm(
       "Biztosan törölni szeretnéd ezt a receptet?",
     );
@@ -96,10 +110,13 @@ export default function RecipeDetailPage() {
     }
 
     try {
-      await deleteRecipe(recipeId);
+      await deleteRecipeMutation.mutateAsync({
+        recipeId: recipeId,
+      });
+
       navigate("/recipes");
     } catch {
-      // A hibát a useDeleteRecipe hook kezeli
+      // A hibát a mutation állapota kezeli, és deleteError alapján jelenítjük meg.
     }
   }
 

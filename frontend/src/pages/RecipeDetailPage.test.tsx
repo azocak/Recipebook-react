@@ -13,7 +13,6 @@ import RecipeDetailPage from "./RecipeDetailPage";
 
 const mockUseAuth = vi.fn();
 const mockNavigate = vi.fn();
-const mockUseDeleteRecipe = vi.fn();
 
 vi.mock("react-router-dom", async () => {
   const actual =
@@ -34,35 +33,12 @@ vi.mock("../auth/AuthContext", () => ({
 vi.mock("../api/recipes", () => ({
   recipesApi: {
     getById: vi.fn(),
+    remove: vi.fn(),
   },
 }));
 
-vi.mock("../hooks/useDeleteRecipe", () => ({
-  useDeleteRecipe: () => mockUseDeleteRecipe(),
-}));
-
 const mockGetById = vi.mocked(recipesApi.getById);
-
-type DeleteHookState = {
-  deleteRecipe: ReturnType<typeof vi.fn>;
-  deleting: boolean;
-  deleteError: string | null;
-};
-
-function createDeleteHookState(overrides?: Partial<DeleteHookState>) {
-  return {
-    deleteRecipe: vi.fn().mockResolvedValue(undefined),
-    deleting: false,
-    deleteError: null,
-    ...overrides,
-  };
-}
-
-function setDeleteHook(overrides?: Partial<DeleteHookState>) {
-  const state = createDeleteHookState(overrides);
-  mockUseDeleteRecipe.mockReturnValue(state);
-  return state;
-}
+const mockRemoveRecipe = vi.mocked(recipesApi.remove);
 
 function createRecipe(overrides?: Partial<Recipe>): Recipe {
   return {
@@ -95,7 +71,7 @@ describe("RecipeDetailPage", () => {
     vi.clearAllMocks();
 
     setGuestAuth(mockUseAuth);
-    setDeleteHook();
+    mockRemoveRecipe.mockResolvedValue(undefined);
     vi.spyOn(window, "confirm").mockReturnValue(true);
 
     mockGetById.mockResolvedValue(createRecipe());
@@ -251,10 +227,8 @@ describe("RecipeDetailPage", () => {
 
   it("does not delete the recipe when the confirmation is cancelled", async () => {
     const user = userEvent.setup();
-    const deleteRecipeMock = vi.fn().mockResolvedValue(undefined);
 
     setAuthenticatedUser(mockUseAuth);
-    setDeleteHook({ deleteRecipe: deleteRecipeMock });
     vi.spyOn(window, "confirm").mockReturnValue(false);
 
     renderRecipeDetailPage();
@@ -264,37 +238,47 @@ describe("RecipeDetailPage", () => {
     expect(window.confirm).toHaveBeenCalledWith(
       "Biztosan törölni szeretnéd ezt a receptet?",
     );
-    expect(deleteRecipeMock).not.toHaveBeenCalled();
+
+    expect(mockRemoveRecipe).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it("deletes the recipe and navigates to /recipes after confirmation", async () => {
     const user = userEvent.setup();
-    const deleteRecipeMock = vi.fn().mockResolvedValue(undefined);
 
     setAuthenticatedUser(mockUseAuth);
-    setDeleteHook({ deleteRecipe: deleteRecipeMock });
 
     renderRecipeDetailPage();
 
     await user.click(await screen.findByRole("button", { name: "Törlés" }));
 
     await waitFor(() => {
-      expect(deleteRecipeMock).toHaveBeenCalledWith(1);
+      expect(mockRemoveRecipe).toHaveBeenCalledWith(1);
     });
 
     expect(mockNavigate).toHaveBeenCalledWith("/recipes");
   });
 
   it("shows the delete error as an alert", async () => {
+    const user = userEvent.setup();
+
+    mockRemoveRecipe.mockRejectedValue(
+      new ApiError("Server error", 500, {
+        detail: "Nem sikerült törölni a receptet.",
+      }),
+    );
+
     setAuthenticatedUser(mockUseAuth);
-    setDeleteHook({ deleteError: "Nem sikerült törölni a receptet." });
 
     renderRecipeDetailPage();
+
+    await user.click(await screen.findByRole("button", { name: "Törlés" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Nem sikerült törölni a receptet.",
     );
+
+    expect(mockNavigate).not.toHaveBeenCalledWith("/recipes");
   });
 
   it("navigates to the edit page when the owner clicks edit", async () => {
