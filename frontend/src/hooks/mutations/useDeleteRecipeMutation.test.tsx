@@ -9,6 +9,8 @@ import {
 } from "../../test/queryClient";
 import { mockRecipe } from "../../test/recipe-fixtures";
 import { useDeleteRecipeMutation } from "./useDeleteRecipeMutation";
+import { toast } from "sonner";
+import { ApiError } from "../../api/errors";
 
 vi.mock("../../api/recipes", () => ({
   recipesApi: {
@@ -16,7 +18,16 @@ vi.mock("../../api/recipes", () => ({
   },
 }));
 
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
 const mockRemoveRecipe = vi.mocked(recipesApi.remove);
+const mockToastSuccess = vi.mocked(toast.success);
+const mockToastError = vi.mocked(toast.error);
 
 function DeleteRecipeMutationTestComponent({
   recipeId = 1,
@@ -56,6 +67,7 @@ describe("useDeleteRecipeMutation", () => {
 
     expect(mockRemoveRecipe).toHaveBeenCalledWith(1);
     expect(mockRemoveRecipe).toHaveBeenCalledTimes(1);
+    expect(mockToastSuccess).toHaveBeenCalledWith("Recept sikeresen törölve.");
   });
 
   it("removes the deleted recipe detail query from the cache", async () => {
@@ -112,5 +124,28 @@ describe("useDeleteRecipeMutation", () => {
 
     expect(await screen.findByText("Törlési hiba")).toBeInTheDocument();
     expect(mockRemoveRecipe).toHaveBeenCalledWith(1);
+    expect(mockToastSuccess).not.toHaveBeenCalled();
+  });
+
+  it("shows an error toast when deleting fails", async () => {
+    const user = userEvent.setup();
+
+    mockRemoveRecipe.mockRejectedValue(
+      new ApiError("Server error", 500, {
+        detail: "Nem sikerült törölni a receptet.",
+      }),
+    );
+
+    renderWithQueryClient(<DeleteRecipeMutationTestComponent />);
+
+    await user.click(screen.getByRole("button", { name: "Törlés" }));
+
+    expect(await screen.findByText("Törlési hiba")).toBeInTheDocument();
+    expect(mockRemoveRecipe).toHaveBeenCalledWith(1);
+
+    expect(mockToastError).toHaveBeenCalledWith(
+      "Nem sikerült törölni a receptet.",
+    );
+    expect(mockToastSuccess).not.toHaveBeenCalled();
   });
 });

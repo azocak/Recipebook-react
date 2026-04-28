@@ -12,6 +12,7 @@ import {
 } from "../constants/auth";
 import { applyApiErrorsToForm } from "../forms/apiErrorAdapter";
 import { registerSchema, type RegisterSchemaValues } from "../schemas/auth";
+import { toast } from "sonner";
 
 export function RegisterPage() {
   const { register: registerUser, loading } = useAuth();
@@ -49,6 +50,7 @@ export function RegisterPage() {
         values.password,
         values.confirmation,
       );
+      toast.success("Sikeres regisztráció.");
       navigate("/recipes", { replace: true });
     } catch (error) {
       applyApiErrorsToForm<RegisterSchemaValues>(error, setError, {

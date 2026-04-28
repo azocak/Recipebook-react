@@ -10,6 +10,8 @@ import {
   renderWithQueryClient,
 } from "../../test/queryClient";
 import { useCreateRecipeMutation } from "./useCreateRecipeMutation";
+import { toast } from "sonner";
+import { ApiError } from "../../api/errors";
 
 vi.mock("../../api/recipes", () => ({
   recipesApi: {
@@ -17,7 +19,16 @@ vi.mock("../../api/recipes", () => ({
   },
 }));
 
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
 const mockCreateRecipe = vi.mocked(recipesApi.create);
+const mockToastSuccess = vi.mocked(toast.success);
+const mockToastError = vi.mocked(toast.error);
 
 const createData: RecipeImageFormData = {
   title: "Új palacsinta",
@@ -71,6 +82,9 @@ describe("useCreateRecipeMutation", () => {
 
     expect(mockCreateRecipe).toHaveBeenCalledWith(createData);
     expect(mockCreateRecipe).toHaveBeenCalledTimes(1);
+    expect(mockToastSuccess).toHaveBeenCalledWith(
+      "Recept sikeresen létrehozva.",
+    );
   });
 
   it("stores the created recipe in the detail cache", async () => {
@@ -133,5 +147,26 @@ describe("useCreateRecipeMutation", () => {
 
     expect(await screen.findByText("Létrehozási hiba")).toBeInTheDocument();
     expect(mockCreateRecipe).toHaveBeenCalledWith(createData);
+    expect(mockToastSuccess).not.toHaveBeenCalled();
+  });
+
+  it("shows an error toast when creating fails with a non-validation error", async () => {
+    const user = userEvent.setup();
+
+    mockCreateRecipe.mockRejectedValue(
+      new ApiError("Server error", 500, {
+        detail: "Szerver hiba.",
+      }),
+    );
+
+    renderWithQueryClient(<CreateRecipeMutationTestComponent />);
+
+    await user.click(screen.getByRole("button", { name: "Létrehozás" }));
+
+    expect(await screen.findByText("Létrehozási hiba")).toBeInTheDocument();
+    expect(mockCreateRecipe).toHaveBeenCalledWith(createData);
+
+    expect(mockToastError).toHaveBeenCalledWith("Szerver hiba.");
+    expect(mockToastSuccess).not.toHaveBeenCalled();
   });
 });

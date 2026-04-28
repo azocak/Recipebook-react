@@ -4,6 +4,7 @@ import { LoginPage } from "./LoginPage";
 import userEvent from "@testing-library/user-event";
 import { ApiError } from "../api/errors";
 import { renderRoute, type RouteEntry } from "../test/router";
+import { toast } from "sonner";
 
 const mockNavigate = vi.fn();
 const mockUseAuth = vi.fn();
@@ -23,6 +24,14 @@ vi.mock("react-router-dom", async () => {
 vi.mock("../auth/AuthContext", () => ({
   useAuth: () => mockUseAuth(),
 }));
+
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+  },
+}));
+
+const mockToastSuccess = vi.mocked(toast.success);
 
 function renderLoginPage(initialEntry: RouteEntry = "/login") {
   return renderRoute(<LoginPage />, {
@@ -95,6 +104,7 @@ describe("LoginPage", () => {
       expect(authState.login).toHaveBeenCalledWith("anna", "titok123");
     });
 
+    expect(mockToastSuccess).toHaveBeenCalledWith("Sikeres bejelentkezés.");
     expect(mockNavigate).toHaveBeenCalledWith("/recipes", { replace: true });
   });
 
@@ -121,6 +131,7 @@ describe("LoginPage", () => {
       expect(authState.login).toHaveBeenCalledWith("anna", "titok123");
     });
 
+    expect(mockToastSuccess).toHaveBeenCalledWith("Sikeres bejelentkezés.");
     expect(mockNavigate).toHaveBeenCalledWith("/recipes/new", {
       replace: true,
     });
