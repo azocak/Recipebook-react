@@ -9,6 +9,7 @@ import { Skeleton } from "../components/ui/Skeleton";
 import { RecipeQueryErrorState } from "../components/recipe/RecipeQueryErrorState";
 import { isRecipeQueryErrorStatus } from "../components/recipe/recipeQueryErrorStateUtils";
 import { PageHeader } from "../components/ui/PageHeader";
+import { RecipeMeta } from "../components/recipe/RecipeMeta";
 
 function formatDateTime(value: string) {
   return new Date(value).toLocaleString("hu-HU", {
@@ -162,32 +163,19 @@ export default function RecipeDetailPage() {
             title={recipe.title}
             meta={
               <>
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Készítette
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">
-                    {recipe.owner_username}
-                  </p>
-                </div>
+                <RecipeMeta label="Készítette" value={recipe.owner_username} />
 
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Adag
-                  </p>
-                  <p className="mt-1 text-center text-sm font-semibold text-slate-900">
-                    {recipe.servings}
-                  </p>
-                </div>
+                <RecipeMeta
+                  label="Adag"
+                  value={recipe.servings}
+                  align="center"
+                />
 
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Főzési idő
-                  </p>
-                  <p className="mt-1 text-center text-sm font-semibold text-slate-900">
-                    {recipe.cooking_time} perc
-                  </p>
-                </div>
+                <RecipeMeta
+                  label="Főzési idő"
+                  value={`${recipe.cooking_time} perc`}
+                  align="center"
+                />
               </>
             }
             actions={
@@ -252,21 +240,13 @@ export default function RecipeDetailPage() {
               </div>
             </section>
 
-            <div className="grid gap-4 border-t border-slate-100 pt-6 text-sm text-slate-600 sm:grid-cols-2">
-              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                  Létrehozva
-                </p>
-                <p className="mt-1 font-medium text-slate-800">
-                  {formatDateTime(recipe.created_at)}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                  Recept azonosító
-                </p>
-                <p className="mt-1 font-medium text-slate-800">#{recipe.id}</p>
-              </div>
+            <div className="grid gap-4 border-t border-slate-100 pt-6 sm:grid-cols-2">
+              <RecipeMeta
+                label="Létrehozva"
+                value={formatDateTime(recipe.created_at)}
+              />
+
+              <RecipeMeta label="Recept azonosító" value={`#${recipe.id}`} />
             </div>
           </div>
         </article>

@@ -12,6 +12,7 @@ import { getApiErrorMessage } from "../utils/getApiErrorMessage";
 import { Skeleton } from "../components/ui/Skeleton";
 import { Spinner } from "../components/ui/Spinner";
 import { PageHeader } from "../components/ui/PageHeader";
+import { RecipeMeta } from "../components/recipe/RecipeMeta";
 
 function RecipesPageSkeleton() {
   return (
@@ -149,23 +150,15 @@ function RecipesPage() {
           description="Böngészd a közösség receptjeit, nézd meg a részleteket, és oszd meg a kedvenceidet."
           meta={
             <>
-              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                  Elérhető receptek
-                </p>
-                <p className="mt-1 text-sm font-semibold text-slate-900">
-                  {recipes.length} db
-                </p>
-              </div>
+              <RecipeMeta
+                label="Elérhető receptek"
+                value={`${recipes.length} db`}
+              />
 
-              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                  Hozzáférés
-                </p>
-                <p className="mt-1 text-sm font-semibold text-slate-900">
-                  {isAuthenticated ? "Bejelentkezve" : "Vendég mód"}
-                </p>
-              </div>
+              <RecipeMeta
+                label="Hozzáférés"
+                value={isAuthenticated ? "Bejelentkezve" : "Vendég mód"}
+              />
             </>
           }
           actions={

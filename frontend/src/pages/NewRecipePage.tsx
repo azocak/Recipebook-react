@@ -4,6 +4,7 @@ import type { RecipeFormData, RecipeImageFormData } from "../api/types";
 import RecipeForm from "../components/RecipeForm";
 import { useCreateRecipeMutation } from "../hooks/mutations/useCreateRecipeMutation";
 import { PageHeader } from "../components/ui/PageHeader";
+import { RecipeMeta } from "../components/recipe/RecipeMeta";
 
 const defaultValues: RecipeFormData = {
   title: "",
@@ -42,23 +43,12 @@ export default function NewRecipePage() {
             description="Adj meg minden fontos részletet, tölts fel képet, és oszd meg az új kedvenc receptedet."
             meta={
               <>
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Űrlap típusa
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">
-                    Új recept
-                  </p>
-                </div>
+                <RecipeMeta label="Űrlap típusa" value="Új recept" />
 
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Következő lépés
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">
-                    Mentés után részletoldal
-                  </p>
-                </div>
+                <RecipeMeta
+                  label="Következő lépés"
+                  value="Mentés után részletoldal"
+                />
               </>
             }
           />

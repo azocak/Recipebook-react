@@ -12,6 +12,7 @@ import { Spinner } from "../components/ui/Spinner";
 import { RecipeQueryErrorState } from "../components/recipe/RecipeQueryErrorState";
 import { isRecipeQueryErrorStatus } from "../components/recipe/recipeQueryErrorStateUtils";
 import { PageHeader } from "../components/ui/PageHeader";
+import { RecipeMeta } from "../components/recipe/RecipeMeta";
 
 function EditRecipePageSkeleton() {
   return (
@@ -170,23 +171,9 @@ export default function EditRecipePage() {
             description="Frissítsd a recept adatait, képét, hozzávalóit és elkészítési leírását."
             meta={
               <>
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Szerkesztett recept
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">
-                    {recipe.title}
-                  </p>
-                </div>
+                <RecipeMeta label="Szerkesztett recept" value={recipe.title} />
 
-                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Készítette
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">
-                    {recipe.owner_username}
-                  </p>
-                </div>
+                <RecipeMeta label="Készítette" value={recipe.owner_username} />
               </>
             }
           />
