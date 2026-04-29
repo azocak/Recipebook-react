@@ -77,22 +77,24 @@ describe("RecipeDetailPage", () => {
     mockGetById.mockResolvedValue(createRecipe());
   });
 
-  it("shows the loading state while the recipe is being fetched", () => {
-    mockGetById.mockReturnValue(new Promise<Recipe>(() => {}));
+  it("shows the recipe detail skeleton while the recipe is being fetched", () => {
+    mockGetById.mockReturnValue(new Promise(() => {}));
 
     renderRecipeDetailPage();
 
     expect(
-      screen.getByRole("heading", { name: "Recept betöltése..." }),
+      screen.getByRole("region", {
+        name: "Recept részleteinek betöltése",
+      }),
     ).toBeInTheDocument();
 
-    expect(
-      screen.getByText("Betöltjük a recept részleteit."),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Recept betöltése...");
   });
 
   it("shows the invalid id state without calling the API", () => {
     renderRecipeDetailPage("/recipes/abc");
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
 
     expect(
       screen.getByRole("heading", {
@@ -100,7 +102,14 @@ describe("RecipeDetailPage", () => {
       }),
     ).toBeInTheDocument();
 
+    expect(screen.getByText("Hibás hivatkozás")).toBeInTheDocument();
+    expect(screen.getByText("🧭")).toBeInTheDocument();
     expect(screen.getByText("Érvénytelen azonosító.")).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: "Vissza a receptekhez" }),
+    ).toBeInTheDocument();
+
     expect(mockGetById).not.toHaveBeenCalled();
   });
 
@@ -115,8 +124,16 @@ describe("RecipeDetailPage", () => {
       }),
     ).toBeInTheDocument();
 
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText("Hozzáférés megtagadva")).toBeInTheDocument();
+    expect(screen.getByText("🔒")).toBeInTheDocument();
+
     expect(
       screen.getByText("Nincs jogosultságod a recept megtekintéséhez."),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: "Vissza a receptekhez" }),
     ).toBeInTheDocument();
 
     expect(mockGetById).toHaveBeenCalledWith(1);
@@ -137,8 +154,10 @@ describe("RecipeDetailPage", () => {
       }),
     ).toBeInTheDocument();
 
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText("Betöltési hiba")).toBeInTheDocument();
+    expect(screen.getByText("⚠️")).toBeInTheDocument();
     expect(screen.getByText("Szerver hiba.")).toBeInTheDocument();
-    expect(mockGetById).toHaveBeenCalledWith(1);
   });
 
   it("shows the not found state", async () => {
@@ -150,13 +169,34 @@ describe("RecipeDetailPage", () => {
       await screen.findByRole("heading", { name: "Nincs ilyen recept." }),
     ).toBeInTheDocument();
 
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText("Eltűnt recept")).toBeInTheDocument();
+    expect(screen.getByText("🔎")).toBeInTheDocument();
+
     expect(
       screen.getByText("A keresett recept nem található."),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: "Vissza a receptekhez" }),
     ).toBeInTheDocument();
 
     expect(mockGetById).toHaveBeenCalledWith(1);
   });
 
+  it("navigates back to recipes from the not found state", async () => {
+    const user = userEvent.setup();
+
+    mockGetById.mockRejectedValue(new ApiError("Not found", 404));
+
+    renderRecipeDetailPage();
+
+    await user.click(
+      await screen.findByRole("button", { name: "Vissza a receptekhez" }),
+    );
+
+    expect(mockNavigate).toHaveBeenCalledWith("/recipes");
+  });
   it("renders the placeholder block when the recipe has no image", async () => {
     mockGetById.mockResolvedValue(
       createRecipe({

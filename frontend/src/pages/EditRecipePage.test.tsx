@@ -113,18 +113,22 @@ describe("EditRecipePage", () => {
     renderEditRecipePage();
 
     expect(
-      screen.getByRole("heading", {
-        name: "Recept szerkesztő betöltése...",
+      screen.getByRole("region", {
+        name: "Recept szerkesztő betöltése",
       }),
     ).toBeInTheDocument();
 
-    expect(
-      screen.getByText("Előkészítjük a szerkesztő űrlapot."),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Recept szerkesztő betöltése...",
+    );
+
+    expect(mockRecipeFormProps).not.toHaveBeenCalled();
   });
 
   it("shows the invalid id state without calling the API", () => {
     renderEditRecipePage("/recipes/abc/edit");
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
 
     expect(
       screen.getByRole("heading", {
@@ -132,7 +136,14 @@ describe("EditRecipePage", () => {
       }),
     ).toBeInTheDocument();
 
+    expect(screen.getByText("Hibás hivatkozás")).toBeInTheDocument();
+    expect(screen.getByText("🧭")).toBeInTheDocument();
     expect(screen.getByText("Érvénytelen azonosító.")).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: "Vissza a receptekhez" }),
+    ).toBeInTheDocument();
+
     expect(mockGetById).not.toHaveBeenCalled();
     expect(mockRecipeFormProps).not.toHaveBeenCalled();
   });
@@ -148,8 +159,16 @@ describe("EditRecipePage", () => {
       }),
     ).toBeInTheDocument();
 
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText("Eltűnt recept")).toBeInTheDocument();
+    expect(screen.getByText("🔎")).toBeInTheDocument();
+
     expect(
       screen.getByText("A keresett recept nem található."),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: "Vissza a receptekhez" }),
     ).toBeInTheDocument();
 
     expect(mockGetById).toHaveBeenCalledWith(1);
@@ -167,8 +186,16 @@ describe("EditRecipePage", () => {
       }),
     ).toBeInTheDocument();
 
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText("Hozzáférés megtagadva")).toBeInTheDocument();
+    expect(screen.getByText("🔒")).toBeInTheDocument();
+
     expect(
       screen.getByText("Nincs jogosultságod a recept megtekintéséhez."),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: "Vissza a receptekhez" }),
     ).toBeInTheDocument();
 
     expect(mockGetById).toHaveBeenCalledWith(1);
@@ -190,7 +217,11 @@ describe("EditRecipePage", () => {
       }),
     ).toBeInTheDocument();
 
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText("Betöltési hiba")).toBeInTheDocument();
+    expect(screen.getByText("⚠️")).toBeInTheDocument();
     expect(screen.getByText("Szerver hiba.")).toBeInTheDocument();
+
     expect(mockRecipeFormProps).not.toHaveBeenCalled();
   });
 
@@ -209,8 +240,16 @@ describe("EditRecipePage", () => {
       }),
     ).toBeInTheDocument();
 
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText("Szerkesztés zárolva")).toBeInTheDocument();
+    expect(screen.getByText("🔐")).toBeInTheDocument();
+
     expect(
       screen.getByText("Csak a recept készítője szerkesztheti ezt a receptet."),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: "Vissza a recepthez" }),
     ).toBeInTheDocument();
 
     expect(mockRecipeFormProps).not.toHaveBeenCalled();
