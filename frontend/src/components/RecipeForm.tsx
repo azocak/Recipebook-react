@@ -341,21 +341,11 @@ export default function RecipeForm({
               </p>
             </div>
 
-            <div className="overflow-hidden rounded-2xl">
-              {displayedImageUrl ? (
-                <img
-                  src={displayedImageUrl}
-                  alt="Receptkép előnézet"
-                  className="aspect-video w-full rounded-2xl border border-slate-200 object-cover"
-                />
-              ) : (
-                <RecipeImageBlock
-                  imageUrl={displayedImageUrl}
-                  alt="Receptkép előnézet"
-                  variant="editor"
-                />
-              )}
-            </div>
+            <RecipeImageBlock
+              imageUrl={displayedImageUrl}
+              alt="Receptkép előnézet"
+              variant="editor"
+            />
 
             <div className="space-y-3">
               <input
