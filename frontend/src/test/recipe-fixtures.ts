@@ -1,4 +1,4 @@
-import type { Recipe } from "../api/types";
+import type { PaginatedResponse, Recipe } from "../api/types";
 
 export const mockRecipe: Recipe = {
   id: 1,
@@ -30,3 +30,16 @@ export const mockRecipes: Recipe[] = [
     created_at: "2026-03-18T12:00:00Z",
   },
 ];
+
+export function createPaginatedRecipes(
+  recipes: Recipe[] = mockRecipes,
+  overrides: Partial<PaginatedResponse<Recipe>> = {},
+): PaginatedResponse<Recipe> {
+  return {
+    count: recipes.length,
+    next: null,
+    previous: null,
+    results: recipes,
+    ...overrides,
+  };
+}

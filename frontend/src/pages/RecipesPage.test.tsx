@@ -3,7 +3,7 @@ import RecipesPage from "./RecipesPage";
 import { setAuthenticatedUser, setGuestAuth } from "../test/auth-fixtures";
 import { ApiError } from "../api/errors";
 import userEvent from "@testing-library/user-event";
-import { mockRecipes } from "../test/recipe-fixtures";
+import { createPaginatedRecipes, mockRecipes } from "../test/recipe-fixtures";
 import { renderRoute } from "../test/router";
 import { createTestQueryClient } from "../test/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -30,7 +30,7 @@ vi.mock("../auth/AuthContext", () => ({
 
 vi.mock("../api/recipes", () => ({
   recipesApi: {
-    getAll: () => mockGetAll(),
+    getAll: (...args: unknown[]) => mockGetAll(...args),
   },
 }));
 
@@ -81,7 +81,7 @@ async function renderPageWithRecipes({
     setGuestAuth(mockUseAuth);
   }
 
-  mockGetAll.mockResolvedValue(recipes);
+  mockGetAll.mockResolvedValue(createPaginatedRecipes(recipes));
   renderRecipesPage();
 
   if (recipes.length === 0) {
@@ -239,7 +239,7 @@ describe("RecipesPage", () => {
       .mockRejectedValueOnce(
         new ApiError("Első hiba", 500, { detail: "Első hiba" }),
       )
-      .mockResolvedValueOnce(mockRecipes);
+      .mockResolvedValueOnce(createPaginatedRecipes(mockRecipes));
 
     renderRecipesPage();
 

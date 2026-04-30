@@ -1,8 +1,36 @@
 import { apiRequest } from "./client";
-import type { HttpMethod, Recipe, RecipeImageFormData } from "./types";
+import type {
+  HttpMethod,
+  PaginatedResponse,
+  Recipe,
+  RecipeImageFormData,
+  RecipeListParams,
+} from "./types";
 
 function request<T>(url: string, method: HttpMethod) {
   return apiRequest<T>(url, { method });
+}
+
+function buildRecipeListQuery(params: RecipeListParams = {}): string {
+  const searchParams = new URLSearchParams();
+
+  const search = params.search?.trim();
+
+  if (search) {
+    searchParams.set("search", search);
+  }
+
+  if (params.ordering) {
+    searchParams.set("ordering", params.ordering);
+  }
+
+  if (params.page && params.page > 1) {
+    searchParams.set("page", String(params.page));
+  }
+
+  const queryString = searchParams.toString();
+
+  return queryString ? `?${queryString}` : "";
 }
 
 function buildRecipeFormData(data: RecipeImageFormData): FormData {
@@ -37,8 +65,11 @@ function sendRecipeForm<T>(
 }
 
 export const recipesApi = {
-  getAll() {
-    return request<Recipe[]>("/recipes/", "GET");
+  getAll(params: RecipeListParams = {}) {
+    return request<PaginatedResponse<Recipe>>(
+      `/recipes/${buildRecipeListQuery(params)}`,
+      "GET",
+    );
   },
 
   getById(id: number) {

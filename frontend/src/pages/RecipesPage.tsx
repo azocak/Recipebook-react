@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 
-import type { Recipe } from "../api/types";
+import type { PaginatedResponse, Recipe } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import RecipeCard from "../components/RecipeCard";
 import { EmptyState } from "../components/ui/EmptyState";
@@ -96,12 +96,15 @@ function RecipesPage() {
   const queryClient = useQueryClient();
 
   const {
-    data: recipes = [],
+    data: recipePage,
     error,
     isError,
     isPending,
     refetch,
   } = useRecipesQuery();
+
+  const recipes = recipePage?.results ?? [];
+  const recipeCount = recipePage?.count ?? 0;
 
   function handleCreateClick() {
     navigate("/recipes/new");
@@ -112,10 +115,23 @@ function RecipesPage() {
   }
 
   function handleRecipeDeleted(deletedRecipeId: number) {
-    queryClient.setQueryData<Recipe[]>(
+    queryClient.setQueryData<PaginatedResponse<Recipe>>(
       queryKeys.recipes.list(),
-      (currentRecipes = []) =>
-        currentRecipes.filter((recipe) => recipe.id !== deletedRecipeId),
+      (currentPage) => {
+        if (!currentPage) {
+          return currentPage;
+        }
+
+        const nextResults = currentPage.results.filter(
+          (recipe) => recipe.id !== deletedRecipeId,
+        );
+
+        return {
+          ...currentPage,
+          count: Math.max(currentPage.count - 1, 0),
+          results: nextResults,
+        };
+      },
     );
   }
 
@@ -152,7 +168,7 @@ function RecipesPage() {
             <>
               <RecipeMeta
                 label="Elérhető receptek"
-                value={`${recipes.length} db`}
+                value={`${recipeCount} db`}
               />
 
               <RecipeMeta
