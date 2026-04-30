@@ -72,8 +72,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
     permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["title"]
+    ordering_fields = ["created_at", "title"]
+    ordering = ["-created_at"]
 
     def get_queryset(self):
         return Recipe.objects.select_related("owner").order_by("-created_at")

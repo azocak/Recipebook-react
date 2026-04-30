@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -120,6 +123,140 @@ class RecipeApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, [])
+
+    def test_guest_can_order_recipes_by_title_ascending(self):
+        Recipe.objects.create(
+            owner=self.other_user,
+            title="Almás pite",
+            ingredients="Alma, liszt, cukor, fahéj",
+            instructions="Készíts tésztát, töltsd meg almával és süsd meg.",
+            cooking_time=45,
+            servings=6,
+        )
+        Recipe.objects.create(
+            owner=self.other_user,
+            title="Zöldségleves",
+            ingredients="Répa, zeller, hagyma, burgonya",
+            instructions="Főzd puhára a zöldségeket bő vízben.",
+            cooking_time=40,
+            servings=4,
+        )
+
+        response = self.client.get(RECIPES_URL, {"ordering": "title"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [recipe["title"] for recipe in response.data],
+            ["Almás pite", "Palacsinta", "Zöldségleves"],
+        )
+
+    def test_guest_can_order_recipes_by_title_descending(self):
+        Recipe.objects.create(
+            owner=self.other_user,
+            title="Almás pite",
+            ingredients="Alma, liszt, cukor, fahéj",
+            instructions="Készíts tésztát, töltsd meg almával és süsd meg.",
+            cooking_time=45,
+            servings=6,
+        )
+        Recipe.objects.create(
+            owner=self.other_user,
+            title="Zöldségleves",
+            ingredients="Répa, zeller, hagyma, burgonya",
+            instructions="Főzd puhára a zöldségeket bő vízben.",
+            cooking_time=40,
+            servings=4,
+        )
+
+        response = self.client.get(RECIPES_URL, {"ordering": "-title"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [recipe["title"] for recipe in response.data],
+            ["Zöldségleves", "Palacsinta", "Almás pite"],
+        )
+
+    def test_guest_can_order_recipes_by_created_at_ascending_and_descending(self):
+        older_recipe = Recipe.objects.create(
+            owner=self.other_user,
+            title="Régi recept",
+            ingredients="Liszt, víz, só, élesztő",
+            instructions="Gyúrd össze, pihentesd és süsd meg.",
+            cooking_time=50,
+            servings=4,
+        )
+        newer_recipe = Recipe.objects.create(
+            owner=self.other_user,
+            title="Új recept",
+            ingredients="Paradicsom, tészta, sajt",
+            instructions="Főzd meg a tésztát és keverd össze a szósszal.",
+            cooking_time=25,
+            servings=2,
+        )
+
+        now = timezone.now()
+        Recipe.objects.filter(id=older_recipe.id).update(
+            created_at=now - timedelta(days=2)
+        )
+        Recipe.objects.filter(id=self.recipe.id).update(
+            created_at=now - timedelta(days=1)
+        )
+        Recipe.objects.filter(id=newer_recipe.id).update(created_at=now)
+
+        ascending_response = self.client.get(RECIPES_URL, {"ordering": "created_at"})
+        descending_response = self.client.get(RECIPES_URL, {"ordering": "-created_at"})
+
+        self.assertEqual(ascending_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(descending_response.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(
+            [recipe["title"] for recipe in ascending_response.data],
+            ["Régi recept", "Palacsinta", "Új recept"],
+        )
+        self.assertEqual(
+            [recipe["title"] for recipe in descending_response.data],
+            ["Új recept", "Palacsinta", "Régi recept"],
+        )
+
+    def test_guest_can_combine_search_and_ordering(self):
+        Recipe.objects.create(
+            owner=self.other_user,
+            title="Almás palacsinta",
+            ingredients="Alma, liszt, tojás, tej",
+            instructions="Keverd össze a tésztát almával és süsd ki.",
+            cooking_time=30,
+            servings=4,
+        )
+        Recipe.objects.create(
+            owner=self.other_user,
+            title="Banános palacsinta",
+            ingredients="Banán, liszt, tojás, tej",
+            instructions="Keverd össze a tésztát banánnal és süsd ki.",
+            cooking_time=30,
+            servings=4,
+        )
+        Recipe.objects.create(
+            owner=self.other_user,
+            title="Zöldségleves",
+            ingredients="Répa, zeller, hagyma, burgonya",
+            instructions="Főzd puhára a zöldségeket bő vízben.",
+            cooking_time=40,
+            servings=4,
+        )
+
+        response = self.client.get(
+            RECIPES_URL,
+            {
+                "search": "palacsinta",
+                "ordering": "-title",
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [recipe["title"] for recipe in response.data],
+            ["Palacsinta", "Banános palacsinta", "Almás palacsinta"],
+        )
 
     def test_guest_can_retrieve_recipe_detail(self):
         response = self.client.get(self.recipe_detail_url(self.recipe.id))
