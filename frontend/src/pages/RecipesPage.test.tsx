@@ -5,6 +5,8 @@ import { ApiError } from "../api/errors";
 import userEvent from "@testing-library/user-event";
 import { mockRecipes } from "../test/recipe-fixtures";
 import { renderRoute } from "../test/router";
+import { createTestQueryClient } from "../test/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
 
 const mockUseAuth = vi.fn();
 const mockGetAll = vi.fn();
@@ -50,10 +52,20 @@ vi.mock("../components/RecipeCard", () => ({
 }));
 
 function renderRecipesPage() {
-  return renderRoute(<RecipesPage />, {
-    path: "/recipes",
-    entry: "/recipes",
-  });
+  const queryClient = createTestQueryClient();
+
+  return {
+    queryClient,
+    ...renderRoute(
+      <QueryClientProvider client={queryClient}>
+        <RecipesPage />
+      </QueryClientProvider>,
+      {
+        path: "/recipes",
+        entry: "/recipes",
+      },
+    ),
+  };
 }
 
 async function renderPageWithRecipes({
@@ -101,18 +113,18 @@ describe("RecipesPage", () => {
     setGuestAuth(mockUseAuth);
   });
 
-  it("shows the loading state while recipes are being fetched", () => {
+  it("shows the recipe list skeleton while fetching recipes", () => {
     mockGetAll.mockReturnValue(new Promise(() => {}));
 
     renderRecipesPage();
 
     expect(
-      screen.getByRole("heading", { name: "Receptek betöltése..." }),
+      screen.getByRole("region", { name: "Receptek betöltése" }),
     ).toBeInTheDocument();
 
-    expect(
-      screen.getByText("Betöltjük a publikus recepteket."),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Receptek betöltése...",
+    );
   });
 
   it("shows the error state and retry button when fetching fails", async () => {
@@ -128,6 +140,9 @@ describe("RecipesPage", () => {
       }),
     ).toBeInTheDocument();
 
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText("Betöltési hiba")).toBeInTheDocument();
+    expect(screen.getByText("⚠️")).toBeInTheDocument();
     expect(screen.getByText("Szerver hiba.")).toBeInTheDocument();
 
     expect(
@@ -135,8 +150,14 @@ describe("RecipesPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows the empty state for guests", async () => {
+  it("shows the empty state for guests and navigates to register", async () => {
+    const user = userEvent.setup();
+
     await renderPageWithRecipes({ recipes: [], isAuthenticated: false });
+
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    expect(screen.getAllByText("Receptkönyv")).toHaveLength(2);
+    expect(screen.getByText("🍲")).toBeInTheDocument();
 
     expect(
       screen.getByText(
@@ -147,15 +168,20 @@ describe("RecipesPage", () => {
     expectRecipeCount(0);
     expectStatusBadge(false);
 
-    expect(
-      screen.getByRole("link", { name: "Regisztráció a receptfeltöltéshez" }),
-    ).toHaveAttribute("href", "/register");
-  });
+    const registerButton = screen.getByRole("button", {
+      name: "Regisztráció a receptfeltöltéshez",
+    });
 
+    await user.click(registerButton);
+
+    expect(mockNavigate).toHaveBeenCalledWith("/register");
+  });
   it("shows the empty state create button for authenticated users and navigates on click", async () => {
     const user = userEvent.setup();
 
     await renderPageWithRecipes({ recipes: [], isAuthenticated: true });
+
+    expect(screen.getByRole("status")).toBeInTheDocument();
 
     const createButton = await screen.findByRole("button", {
       name: "Első recept létrehozása",

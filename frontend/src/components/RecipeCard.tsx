@@ -1,8 +1,10 @@
+import type { MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+
 import type { Recipe } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
-import type { MouseEvent } from "react";
-import { useDeleteRecipe } from "../hooks/useDeleteRecipe";
+import { useDeleteRecipeMutation } from "../hooks/mutations/useDeleteRecipeMutation";
+import { getApiErrorMessage } from "../utils/getApiErrorMessage";
 import { RecipeImageBlock } from "./recipe/RecipeImageBlock";
 
 interface RecipeCardProps {
@@ -13,8 +15,17 @@ interface RecipeCardProps {
 function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { deleteRecipe, deleting, deleteError } = useDeleteRecipe();
+  const deleteRecipeMutation = useDeleteRecipeMutation();
+
   const isOwner = !!user && recipe.owner === user.id;
+  const deleting = deleteRecipeMutation.isPending;
+
+  const deleteError = deleteRecipeMutation.isError
+    ? getApiErrorMessage(
+        deleteRecipeMutation.error,
+        "Nem sikerült törölni a receptet.",
+      )
+    : null;
 
   const handleEditButton = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
@@ -33,7 +44,9 @@ function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
     }
 
     try {
-      await deleteRecipe(recipe.id);
+      await deleteRecipeMutation.mutateAsync({
+        recipeId: recipe.id,
+      });
 
       if (onDeleteSuccess) {
         onDeleteSuccess(recipe.id);
@@ -41,7 +54,7 @@ function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
         navigate("/recipes");
       }
     } catch {
-      // A hibát a hook már kezeli a deleteError állapotban.
+      // A hibát a mutation állapota kezeli, és deleteError alapján jelenítjük meg.
     }
   }
 

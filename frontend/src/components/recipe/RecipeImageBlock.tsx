@@ -1,3 +1,5 @@
+import { RecipeImage } from "./RecipeImage";
+
 type RecipeImageVariant = "card" | "detail" | "editor";
 
 type RecipeImageBlockProps = {
@@ -29,43 +31,13 @@ export function RecipeImageBlock({
 
   return (
     <div className={`overflow-hidden ${wrapperClassMap[variant]}`}>
-      {imageUrl ? (
-        <img
-          src={imageUrl}
-          alt={alt}
-          className="h-full w-full object-cover"
-          loading="lazy"
-        />
-      ) : (
-        <div
-          role="img"
-          aria-label={placeholderLabel}
-          className="flex h-full w-full flex-col items-center justify-center gap-3 text-slate-400"
-        >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className={iconClassMap[variant]}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.7"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect x="3" y="5" width="18" height="14" rx="2" />
-            <circle cx="9" cy="10" r="1.5" />
-            <path d="M21 16l-5.5-5.5L7 19" />
-          </svg>
-
-          {showPlaceholderText ? (
-            <p className="text-sm font-medium text-slate-600">
-              {placeholderLabel}
-            </p>
-          ) : (
-            <span className="sr-only">{placeholderLabel}</span>
-          )}
-        </div>
-      )}
+      <RecipeImage
+        imageUrl={imageUrl}
+        alt={alt}
+        placeholderLabel={placeholderLabel}
+        placeholderIconClassName={iconClassMap[variant]}
+        showPlaceholderText={showPlaceholderText}
+      />
     </div>
   );
 }

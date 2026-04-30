@@ -12,6 +12,7 @@ import {
 } from "../constants/auth";
 import { applyApiErrorsToForm } from "../forms/apiErrorAdapter";
 import { loginSchema, type LoginSchemaValues } from "../schemas/auth";
+import { toast } from "sonner";
 
 type LocationState = {
   from?: {
@@ -50,6 +51,7 @@ export function LoginPage() {
   async function onSubmit(values: LoginSchemaValues) {
     try {
       await login(values.username, values.password);
+      toast.success("Sikeres bejelentkezés.");
       navigate(from, { replace: true });
     } catch (error) {
       applyApiErrorsToForm<LoginSchemaValues>(error, setError, {

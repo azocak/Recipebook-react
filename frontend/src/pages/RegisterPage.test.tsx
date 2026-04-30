@@ -4,6 +4,7 @@ import { ApiError } from "../api/errors";
 import { setMockAuthState } from "../test/auth-fixtures";
 import { RegisterPage } from "./RegisterPage";
 import { renderRoute } from "../test/router";
+import { toast } from "sonner";
 
 const mockNavigate = vi.fn();
 const mockUseAuth = vi.fn();
@@ -23,6 +24,14 @@ vi.mock("react-router-dom", async () => {
 vi.mock("../auth/AuthContext", () => ({
   useAuth: () => mockUseAuth(),
 }));
+
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+  },
+}));
+
+const mockToastSuccess = vi.mocked(toast.success);
 
 function renderRegisterPage(route = "/register") {
   return renderRoute(<RegisterPage />, {
@@ -190,6 +199,7 @@ describe("RegisterPage", () => {
       );
     });
 
+    expect(mockToastSuccess).toHaveBeenCalledWith("Sikeres regisztráció.");
     expect(mockNavigate).toHaveBeenCalledWith("/recipes", { replace: true });
   });
 });

@@ -1,14 +1,19 @@
+import { QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
-import RecipeCard from "./RecipeCard";
-import type { Recipe } from "../api/types";
-import { mockRecipe } from "../test/recipe-fixtures";
-import { createAuthState } from "../test/auth-fixtures";
-import { MemoryRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
+
+import { ApiError } from "../api/errors";
+import { recipesApi } from "../api/recipes";
+import type { Recipe } from "../api/types";
+import { useAuth } from "../auth/AuthContext";
+import { queryKeys } from "../lib/queryKeys";
+import { setAuthenticatedUser, setGuestAuth } from "../test/auth-fixtures";
+import { createTestQueryClient } from "../test/queryClient";
+import { mockRecipe } from "../test/recipe-fixtures";
+import RecipeCard from "./RecipeCard";
 
 const mockNavigate = vi.fn();
-const mockUseAuth = vi.fn();
-const mockUseDeleteRecipe = vi.fn();
 
 const ownerUser = { id: 1, username: "anna", email: "anna@gmail.com" };
 const otherUser = { id: 2, username: "bela", email: "bela@gmail.com" };
@@ -26,12 +31,17 @@ vi.mock("react-router-dom", async () => {
 });
 
 vi.mock("../auth/AuthContext", () => ({
-  useAuth: () => mockUseAuth(),
+  useAuth: vi.fn(),
 }));
 
-vi.mock("../hooks/useDeleteRecipe", () => ({
-  useDeleteRecipe: () => mockUseDeleteRecipe(),
+vi.mock("../api/recipes", () => ({
+  recipesApi: {
+    remove: vi.fn(),
+  },
 }));
+
+const mockUseAuth = vi.mocked(useAuth);
+const mockRemoveRecipe = vi.mocked(recipesApi.remove);
 
 function createRecipe(overrides?: Partial<Recipe>): Recipe {
   return {
@@ -43,56 +53,35 @@ function createRecipe(overrides?: Partial<Recipe>): Recipe {
 }
 
 function setAuthGuest() {
-  mockUseAuth.mockReturnValue(createAuthState());
+  setGuestAuth(mockUseAuth);
 }
 
 function setAuthUser(user = ownerUser) {
-  mockUseAuth.mockReturnValue(
-    createAuthState({
-      user,
-      isAuthenticated: true,
-    }),
-  );
-}
-
-function createDeleteHookState(
-  overrides?: Partial<{
-    deleteRecipe: ReturnType<typeof vi.fn>;
-    deleting: boolean;
-    deleteError: string | null;
-  }>,
-) {
-  return {
-    deleteRecipe: vi.fn().mockResolvedValue(undefined),
-    deleting: false,
-    deleteError: null,
-    ...overrides,
-  };
-}
-
-function setDeleteHook(
-  overrides?: Partial<{
-    deleteRecipe: ReturnType<typeof vi.fn>;
-    deleting: boolean;
-    deleteError: string | null;
-  }>,
-) {
-  const state = createDeleteHookState(overrides);
-  mockUseDeleteRecipe.mockReturnValue(state);
-  return state;
+  setAuthenticatedUser(mockUseAuth, user);
 }
 
 function renderRecipeCard(
   recipe: Recipe = createRecipe(),
   options?: {
-    onDeleteSuccess?: (deleteRecipeId: number) => void;
+    onDeleteSuccess?: (deletedRecipeId: number) => void;
+    queryClient?: ReturnType<typeof createTestQueryClient>;
   },
 ) {
-  return render(
-    <MemoryRouter>
-      <RecipeCard recipe={recipe} onDeleteSuccess={options?.onDeleteSuccess} />
-    </MemoryRouter>,
-  );
+  const queryClient = options?.queryClient ?? createTestQueryClient();
+
+  return {
+    queryClient,
+    ...render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <RecipeCard
+            recipe={recipe}
+            onDeleteSuccess={options?.onDeleteSuccess}
+          />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    ),
+  };
 }
 
 function getEditButton() {
@@ -124,7 +113,7 @@ describe("RecipeCard", () => {
     vi.clearAllMocks();
 
     setAuthGuest();
-    setDeleteHook();
+    mockRemoveRecipe.mockResolvedValue(undefined);
 
     vi.spyOn(window, "confirm").mockReturnValue(true);
   });
@@ -226,13 +215,11 @@ describe("RecipeCard", () => {
 
   it("does not delete the recipe when confirmation is cancelled", async () => {
     const user = userEvent.setup();
-    const deleteRecipeMock = vi.fn().mockResolvedValue(undefined);
     const onDeleteSuccess = vi.fn();
 
     vi.spyOn(window, "confirm").mockReturnValue(false);
 
     setAuthUser(ownerUser);
-    setDeleteHook({ deleteRecipe: deleteRecipeMock });
 
     renderRecipeCard(createRecipe(), { onDeleteSuccess });
 
@@ -241,86 +228,99 @@ describe("RecipeCard", () => {
     expect(window.confirm).toHaveBeenLastCalledWith(
       "Biztosan törölni szeretnéd ezt a receptet?",
     );
-    expect(deleteRecipeMock).not.toHaveBeenCalled();
+    expect(mockRemoveRecipe).not.toHaveBeenCalled();
     expect(onDeleteSuccess).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
-  it("calls deleteRecipe and onDeleteSuccess when deletion is confirmed", async () => {
+  it("deletes the recipe and calls onDeleteSuccess when deletion is confirmed", async () => {
     const user = userEvent.setup();
-    const deleteRecipeMock = vi.fn().mockResolvedValue(undefined);
     const onDeleteSuccess = vi.fn();
 
     setAuthUser(ownerUser);
-
-    mockUseDeleteRecipe.mockReturnValue(
-      createDeleteHookState({ deleteRecipe: deleteRecipeMock }),
-    );
 
     renderRecipeCard(createRecipe(), { onDeleteSuccess });
 
     await user.click(getDeleteButtonOrThrow());
 
     await waitFor(() => {
-      expect(deleteRecipeMock).toHaveBeenCalledWith(1);
+      expect(mockRemoveRecipe).toHaveBeenCalledWith(1);
     });
 
     expect(onDeleteSuccess).toHaveBeenCalledWith(1);
     expect(mockNavigate).not.toHaveBeenCalledWith("/recipes");
   });
 
-  it("navigates back to /recipes after successful deletion when no callback is provided", async () => {
+  it("removes the deleted recipe detail cache after successful deletion", async () => {
     const user = userEvent.setup();
-    const deleteRecipeMock = vi.fn().mockResolvedValue(undefined);
+    const queryClient = createTestQueryClient();
+
+    queryClient.setQueryData(queryKeys.recipes.detail(1), mockRecipe);
 
     setAuthUser(ownerUser);
 
-    mockUseDeleteRecipe.mockReturnValue(
-      createDeleteHookState({
-        deleteRecipe: deleteRecipeMock,
-      }),
-    );
+    renderRecipeCard(createRecipe(), { queryClient });
+
+    await user.click(getDeleteButtonOrThrow());
+
+    await waitFor(() => {
+      expect(mockRemoveRecipe).toHaveBeenCalledWith(1);
+    });
+
+    expect(
+      queryClient.getQueryData(queryKeys.recipes.detail(1)),
+    ).toBeUndefined();
+  });
+
+  it("navigates back to /recipes after successful deletion when no callback is provided", async () => {
+    const user = userEvent.setup();
+
+    setAuthUser(ownerUser);
 
     renderRecipeCard();
 
     await user.click(getDeleteButtonOrThrow());
 
     await waitFor(() => {
-      expect(deleteRecipeMock).toHaveBeenCalledWith(1);
+      expect(mockRemoveRecipe).toHaveBeenCalledWith(1);
     });
 
     expect(mockNavigate).toHaveBeenCalledWith("/recipes");
   });
 
-  it("shows the delete error from the hook", () => {
-    setAuthUser(ownerUser);
+  it("shows the delete error from the mutation", async () => {
+    const user = userEvent.setup();
 
-    mockUseDeleteRecipe.mockReturnValue(
-      createDeleteHookState({
-        deleteError: "Nem sikerült törölni a receptet.",
+    mockRemoveRecipe.mockRejectedValue(
+      new ApiError("Server error", 500, {
+        detail: "Nem sikerült törölni a receptet.",
       }),
     );
 
+    setAuthUser(ownerUser);
+
     renderRecipeCard();
 
-    expect(screen.getByRole("alert")).toHaveTextContent(
+    await user.click(getDeleteButtonOrThrow());
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
       "Nem sikerült törölni a receptet.",
     );
   });
 
-  it("disables the owner action buttons while deletion is in progress", () => {
-    setAuthUser(ownerUser);
+  it("disables the owner action buttons while deletion is in progress", async () => {
+    const user = userEvent.setup();
 
-    mockUseDeleteRecipe.mockReturnValue(
-      createDeleteHookState({
-        deleting: true,
-      }),
-    );
+    mockRemoveRecipe.mockReturnValue(new Promise<void>(() => {}));
+
+    setAuthUser(ownerUser);
 
     renderRecipeCard();
 
+    await user.click(getDeleteButtonOrThrow());
+
+    expect(await screen.findByText("Törlés...")).toBeInTheDocument();
     expect(getEditButtonOrThrow()).toBeDisabled();
     expect(getDeleteButtonOrThrow()).toBeDisabled();
-    expect(screen.getByText("Törlés...")).toBeInTheDocument();
   });
 });

@@ -4,6 +4,9 @@ import NewRecipePage from "./NewRecipePage";
 import { mockRecipe } from "../test/recipe-fixtures";
 import userEvent from "@testing-library/user-event";
 import { renderRoute } from "../test/router";
+import { createTestQueryClient } from "../test/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryKeys } from "../lib/queryKeys";
 
 const mockNavigate = vi.fn();
 const mockCreateRecipe = vi.fn();
@@ -86,10 +89,20 @@ vi.mock("../components/RecipeForm", () => ({
 }));
 
 function renderNewRecipePage(route = "/recipes/new") {
-  return renderRoute(<NewRecipePage />, {
-    path: "/recipes/new",
-    entry: route,
-  });
+  const queryClient = createTestQueryClient();
+
+  return {
+    queryClient,
+    ...renderRoute(
+      <QueryClientProvider client={queryClient}>
+        <NewRecipePage />
+      </QueryClientProvider>,
+      {
+        path: "/recipes/new",
+        entry: route,
+      },
+    ),
+  };
 }
 
 describe("NewRecipePage", () => {
@@ -130,7 +143,7 @@ describe("NewRecipePage", () => {
     expect(screen.getByTestId("initial-image-url")).toHaveTextContent("");
   });
 
-  it("forwards the submitted image payload to recipesApi.create and navigates to the detail page", async () => {
+  it("creates the recipe, updates the detail cache and navigates to the detail page", async () => {
     const user = userEvent.setup();
     const imageFile = new File(["fake-image"], "new-recipe.png", {
       type: "image/png",
@@ -146,12 +159,15 @@ describe("NewRecipePage", () => {
       remove_image: false,
     };
 
-    mockCreateRecipe.mockResolvedValue({
+    const createdRecipe = {
       ...mockRecipe,
       id: 7,
-    });
+      title: "Új recept",
+    };
 
-    renderNewRecipePage();
+    mockCreateRecipe.mockResolvedValue(createdRecipe);
+
+    const { queryClient } = renderNewRecipePage();
 
     await user.click(screen.getByRole("button", { name: "Recept mentése" }));
 
@@ -166,6 +182,10 @@ describe("NewRecipePage", () => {
         remove_image: false,
       });
     });
+
+    expect(queryClient.getQueryData(queryKeys.recipes.detail(7))).toEqual(
+      createdRecipe,
+    );
 
     expect(mockNavigate).toHaveBeenCalledWith("/recipes/7");
   });

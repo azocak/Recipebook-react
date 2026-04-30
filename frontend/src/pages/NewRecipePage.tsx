@@ -1,8 +1,10 @@
 import { Link, useNavigate } from "react-router-dom";
 
-import { recipesApi } from "../api/recipes";
 import type { RecipeFormData, RecipeImageFormData } from "../api/types";
 import RecipeForm from "../components/RecipeForm";
+import { useCreateRecipeMutation } from "../hooks/mutations/useCreateRecipeMutation";
+import { PageHeader } from "../components/ui/PageHeader";
+import { RecipeMeta } from "../components/recipe/RecipeMeta";
 
 const defaultValues: RecipeFormData = {
   title: "",
@@ -14,9 +16,11 @@ const defaultValues: RecipeFormData = {
 
 export default function NewRecipePage() {
   const navigate = useNavigate();
+  const createRecipeMutation = useCreateRecipeMutation();
 
   async function handleSubmit(data: RecipeImageFormData) {
-    const createdRecipe = await recipesApi.create(data);
+    const createdRecipe = await createRecipeMutation.mutateAsync(data);
+
     navigate(`/recipes/${createdRecipe.id}`);
   }
 
@@ -32,13 +36,22 @@ export default function NewRecipePage() {
         </Link>
 
         <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 bg-orange-50/70 px-6 py-6 sm:px-8">
-            <div className="space-y-4">
-              <p className="text-center text-sm font-medium uppercase tracking-[0.18em] text-orange-700">
-                Új recept
-              </p>
-            </div>
-          </div>
+          <PageHeader
+            className="rounded-none border-x-0 border-t-0 border-b border-slate-100 shadow-none"
+            eyebrow="Új recept"
+            title="Recept létrehozása"
+            description="Adj meg minden fontos részletet, tölts fel képet, és oszd meg az új kedvenc receptedet."
+            meta={
+              <>
+                <RecipeMeta label="Űrlap típusa" value="Új recept" />
+
+                <RecipeMeta
+                  label="Következő lépés"
+                  value="Mentés után részletoldal"
+                />
+              </>
+            }
+          />
 
           <div className="px-6 py-6 sm:px-8">
             <RecipeForm
