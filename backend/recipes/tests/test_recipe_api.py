@@ -55,6 +55,15 @@ class RecipeApiTests(APITestCase):
         payload.update(overrides)
         return payload
 
+    def create_recipe(self, title, owner=None, **overrides):
+        payload = self.valid_recipe_payload(title=title)
+        payload.update(overrides)
+
+        return Recipe.objects.create(
+            owner=owner or self.other_user,
+            **payload,
+        )
+
     def assert_invalid_create_field(self, field, value):
         self.login_owner()
 
@@ -83,7 +92,11 @@ class RecipeApiTests(APITestCase):
         response = self.client.get(RECIPES_URL)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data["count"], 1)
+        self.assertIsNone(response.data["next"])
+        self.assertIsNone(response.data["previous"])
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["title"], "Palacsinta")
 
     def test_guest_can_search_recipes_by_title_case_insensitively(self):
         Recipe.objects.create(
@@ -104,10 +117,11 @@ class RecipeApiTests(APITestCase):
         )
 
         response = self.client.get(RECIPES_URL, {"search": "PALA"})
+        results = response.data["results"]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["title"], "Palacsinta")
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["title"], "Palacsinta")
 
     def test_guest_search_with_no_matching_title_returns_empty_list(self):
         Recipe.objects.create(
@@ -122,7 +136,7 @@ class RecipeApiTests(APITestCase):
         response = self.client.get(RECIPES_URL, {"search": "tiramisu"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, [])
+        self.assertEqual(response.data["results"], [])
 
     def test_guest_can_order_recipes_by_title_ascending(self):
         Recipe.objects.create(
@@ -146,7 +160,7 @@ class RecipeApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            [recipe["title"] for recipe in response.data],
+            [recipe["title"] for recipe in response.data["results"]],
             ["Almás pite", "Palacsinta", "Zöldségleves"],
         )
 
@@ -172,7 +186,7 @@ class RecipeApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            [recipe["title"] for recipe in response.data],
+            [recipe["title"] for recipe in response.data["results"]],
             ["Zöldségleves", "Palacsinta", "Almás pite"],
         )
 
@@ -210,11 +224,11 @@ class RecipeApiTests(APITestCase):
         self.assertEqual(descending_response.status_code, status.HTTP_200_OK)
 
         self.assertEqual(
-            [recipe["title"] for recipe in ascending_response.data],
+            [recipe["title"] for recipe in ascending_response.data["results"]],
             ["Régi recept", "Palacsinta", "Új recept"],
         )
         self.assertEqual(
-            [recipe["title"] for recipe in descending_response.data],
+            [recipe["title"] for recipe in descending_response.data["results"]],
             ["Új recept", "Palacsinta", "Régi recept"],
         )
 
@@ -254,8 +268,66 @@ class RecipeApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            [recipe["title"] for recipe in response.data],
+            [recipe["title"] for recipe in response.data["results"]],
             ["Palacsinta", "Banános palacsinta", "Almás palacsinta"],
+        )
+
+    def test_guest_recipe_list_returns_paginated_response_shape(self):
+        for index in range(7):
+            self.create_recipe(title=f"Teszt recept {index}")
+
+        response = self.client.get(RECIPES_URL)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 8)
+        self.assertIsNotNone(response.data["next"])
+        self.assertIsNone(response.data["previous"])
+        self.assertIn("results", response.data)
+        self.assertEqual(len(response.data["results"]), 6)
+
+    def test_guest_can_request_second_recipe_list_page(self):
+        for index in range(7):
+            self.create_recipe(title=f"Teszt recept {index}")
+
+        response = self.client.get(RECIPES_URL, {"page": 2})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 8)
+        self.assertIsNone(response.data["next"])
+        self.assertIsNotNone(response.data["previous"])
+        self.assertEqual(len(response.data["results"]), 2)
+
+    def test_guest_can_combine_search_ordering_and_pagination(self):
+        titles = [
+            "Almás palacsinta",
+            "Banános palacsinta",
+            "Csokis palacsinta",
+            "Diós palacsinta",
+            "Epres palacsinta",
+            "Fahéjas palacsinta",
+            "Gesztenyés palacsinta",
+            "Zöldségleves",
+        ]
+
+        for title in titles:
+            self.create_recipe(title=title)
+
+        response = self.client.get(
+            RECIPES_URL,
+            {
+                "search": "palacsinta",
+                "ordering": "title",
+                "page": 2,
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 8)
+        self.assertIsNone(response.data["next"])
+        self.assertIsNotNone(response.data["previous"])
+        self.assertEqual(
+            [recipe["title"] for recipe in response.data["results"]],
+            ["Gesztenyés palacsinta", "Palacsinta"],
         )
 
     def test_guest_can_retrieve_recipe_detail(self):

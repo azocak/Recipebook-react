@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Recipe
+from .pagination import RecipePagination
 from .permissions import IsOwnerOrReadOnly
 from .serializers import (
     LoginSerializer,
@@ -76,6 +77,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     search_fields = ["title"]
     ordering_fields = ["created_at", "title"]
     ordering = ["-created_at"]
+    pagination_class = RecipePagination
 
     def get_queryset(self):
         return Recipe.objects.select_related("owner").order_by("-created_at")
