@@ -82,6 +82,45 @@ class RecipeApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
 
+    def test_guest_can_search_recipes_by_title_case_insensitively(self):
+        Recipe.objects.create(
+            owner=self.other_user,
+            title="Lecsó",
+            ingredients="Paprika, paradicsom, hagyma",
+            instructions="Vágd össze és főzd puhára.",
+            cooking_time=35,
+            servings=3,
+        )
+        Recipe.objects.create(
+            owner=self.other_user,
+            title="Csirkepaprikás",
+            ingredients="Csirke, paprika, hagyma, tejföl",
+            instructions="Főzd meg a csirkét paprikás alapon.",
+            cooking_time=55,
+            servings=4,
+        )
+
+        response = self.client.get(RECIPES_URL, {"search": "PALA"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["title"], "Palacsinta")
+
+    def test_guest_search_with_no_matching_title_returns_empty_list(self):
+        Recipe.objects.create(
+            owner=self.other_user,
+            title="Lecsó",
+            ingredients="Paprika, paradicsom, hagyma",
+            instructions="Vágd össze és főzd puhára.",
+            cooking_time=35,
+            servings=3,
+        )
+
+        response = self.client.get(RECIPES_URL, {"search": "tiramisu"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, [])
+
     def test_guest_can_retrieve_recipe_detail(self):
         response = self.client.get(self.recipe_detail_url(self.recipe.id))
 
