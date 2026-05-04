@@ -1,3 +1,5 @@
+import type { RecipeOrdering } from "../api/types";
+
 export const RECIPE_TITLE_MIN = 3;
 export const RECIPE_TITLE_MAX = 120;
 export const RECIPE_TEXTAREA_MIN = 10;
@@ -61,3 +63,25 @@ export const RECIPE_IMAGE_ACCEPT_ATTR = [
 ].join(",");
 
 export const RECIPE_IMAGE_HELPER_TEXT = `Opcionális. Támogatott formátumok: ${RECIPE_ACCEPTED_IMAGE_LABELS.join(", ")}. Maximum méret: ${RECIPE_IMAGE_MAX_SIZE_MB} MB.`;
+
+export const RECIPE_ORDERING_OPTIONS: {
+  value: RecipeOrdering;
+  label: string;
+}[] = [
+  {
+    value: "-created_at",
+    label: "Legújabb elöl",
+  },
+  {
+    value: "created_at",
+    label: "Legrégebbi elöl",
+  },
+  {
+    value: "title",
+    label: "Cím szerint A–Z",
+  },
+  {
+    value: "-title",
+    label: "Cím szerint Z–A",
+  },
+];
