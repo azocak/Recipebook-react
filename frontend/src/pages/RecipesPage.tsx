@@ -1,7 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
-import type { Recipe } from "../api/types";
+import type {
+  PaginatedResponse,
+  Recipe,
+  RecipeListParams,
+  RecipeOrdering,
+} from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import RecipeCard from "../components/RecipeCard";
 import { EmptyState } from "../components/ui/EmptyState";
@@ -13,6 +18,39 @@ import { Skeleton } from "../components/ui/Skeleton";
 import { Spinner } from "../components/ui/Spinner";
 import { PageHeader } from "../components/ui/PageHeader";
 import { RecipeMeta } from "../components/recipe/RecipeMeta";
+import { RECIPE_ORDERING_OPTIONS } from "../constants/recipe";
+import { RecipeFilterBar } from "../components/recipe/RecipeFilterBar";
+import { useEffect, useState } from "react";
+import { useDebouncedValue } from "../hooks/useDebouncedValue";
+import { PaginationControls } from "../components/ui/PaginationControls";
+
+const RECIPE_SEARCH_DEBOUNCE_MS = 1000;
+
+function getRecipeOrdering(value: string | null): RecipeOrdering | "" {
+  return RECIPE_ORDERING_OPTIONS.some((option) => option.value === value)
+    ? (value as RecipeOrdering)
+    : "";
+}
+
+function getRecipePage(value: string | null): number | undefined {
+  const page = Number(value);
+
+  return Number.isInteger(page) && page > 1 ? page : undefined;
+}
+
+function buildRecipeListParams(
+  searchParams: URLSearchParams,
+): RecipeListParams {
+  const search = searchParams.get("search")?.trim();
+  const ordering = getRecipeOrdering(searchParams.get("ordering"));
+  const page = getRecipePage(searchParams.get("page"));
+
+  return {
+    ...(search ? { search } : {}),
+    ...(ordering ? { ordering } : {}),
+    ...(page ? { page } : {}),
+  };
+}
 
 function RecipesPageSkeleton() {
   return (
@@ -94,14 +132,86 @@ function RecipesPage() {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const urlSearch = searchParams.get("search") ?? "";
+  const ordering = getRecipeOrdering(searchParams.get("ordering"));
+  const currentPage = getRecipePage(searchParams.get("page")) ?? 1;
+  const recipeListParams = buildRecipeListParams(searchParams);
+
+  const [searchInput, setSearchInput] = useState(urlSearch);
+  const debouncedSearch = useDebouncedValue(
+    searchInput,
+    RECIPE_SEARCH_DEBOUNCE_MS,
+  );
+
+  useEffect(() => {
+    setSearchInput(urlSearch);
+  }, [urlSearch]);
+
+  useEffect(() => {
+    const normalizedSearchInput = searchInput.trim();
+    const normalizedDebouncedSearch = debouncedSearch.trim();
+    const normalizedUrlSearch = urlSearch.trim();
+
+    if (normalizedDebouncedSearch !== normalizedSearchInput) {
+      return;
+    }
+
+    if (normalizedDebouncedSearch === normalizedUrlSearch) {
+      return;
+    }
+
+    setSearchParams((currentParams) => {
+      const nextParams = new URLSearchParams(currentParams);
+
+      if (normalizedDebouncedSearch) {
+        nextParams.set("search", normalizedDebouncedSearch);
+      } else {
+        nextParams.delete("search");
+      }
+
+      nextParams.delete("page");
+
+      return nextParams;
+    });
+  }, [debouncedSearch, searchInput, setSearchParams, urlSearch]);
 
   const {
-    data: recipes = [],
+    data: recipePage,
     error,
     isError,
     isPending,
     refetch,
-  } = useRecipesQuery();
+  } = useRecipesQuery(recipeListParams);
+
+  const recipes = recipePage?.results ?? [];
+  const recipeCount = recipePage?.count ?? 0;
+  const hasPreviousPage = Boolean(recipePage?.previous);
+  const hasNextPage = Boolean(recipePage?.next);
+  const shouldShowPagination = hasPreviousPage || hasNextPage;
+  const hasActiveRecipeListFilters = Boolean(searchInput.trim() || ordering);
+  const shouldShowNoResultsState =
+    recipes.length === 0 && hasActiveRecipeListFilters;
+  const isResetDisabled = !searchInput.trim() && !ordering && currentPage === 1;
+
+  function handlePageChange(nextPage: number) {
+    updateRecipeListSearchParams((nextParams) => {
+      if (nextPage > 1) {
+        nextParams.set("page", String(nextPage));
+      } else {
+        nextParams.delete("page");
+      }
+    });
+  }
+
+  function handlePreviousPage() {
+    handlePageChange(Math.max(currentPage - 1, 1));
+  }
+
+  function handleNextPage() {
+    handlePageChange(currentPage + 1);
+  }
 
   function handleCreateClick() {
     navigate("/recipes/new");
@@ -111,11 +221,62 @@ function RecipesPage() {
     navigate("/register");
   }
 
+  function updateRecipeListSearchParams(
+    updateParams: (nextParams: URLSearchParams) => void,
+  ) {
+    setSearchParams((currentParams) => {
+      const nextParams = new URLSearchParams(currentParams);
+
+      updateParams(nextParams);
+
+      return nextParams;
+    });
+  }
+
+  function handleSearchChange(nextSearch: string) {
+    setSearchInput(nextSearch);
+  }
+
+  function handleOrderingChange(nextOrdering: RecipeOrdering | "") {
+    updateRecipeListSearchParams((nextParams) => {
+      if (nextOrdering) {
+        nextParams.set("ordering", nextOrdering);
+      } else {
+        nextParams.delete("ordering");
+      }
+
+      nextParams.delete("page");
+    });
+  }
+
+  function handleResetFilters() {
+    setSearchInput("");
+
+    updateRecipeListSearchParams((nextParams) => {
+      nextParams.delete("search");
+      nextParams.delete("ordering");
+      nextParams.delete("page");
+    });
+  }
+
   function handleRecipeDeleted(deletedRecipeId: number) {
-    queryClient.setQueryData<Recipe[]>(
-      queryKeys.recipes.list(),
-      (currentRecipes = []) =>
-        currentRecipes.filter((recipe) => recipe.id !== deletedRecipeId),
+    queryClient.setQueryData<PaginatedResponse<Recipe>>(
+      queryKeys.recipes.list(recipeListParams),
+      (currentPage) => {
+        if (!currentPage) {
+          return currentPage;
+        }
+
+        const nextResults = currentPage.results.filter(
+          (recipe) => recipe.id !== deletedRecipeId,
+        );
+
+        return {
+          ...currentPage,
+          count: Math.max(currentPage.count - 1, 0),
+          results: nextResults,
+        };
+      },
     );
   }
 
@@ -152,7 +313,7 @@ function RecipesPage() {
             <>
               <RecipeMeta
                 label="Elérhető receptek"
-                value={`${recipes.length} db`}
+                value={`${recipeCount} db`}
               />
 
               <RecipeMeta
@@ -181,12 +342,30 @@ function RecipesPage() {
           }
         />
 
-        {recipes.length === 0 ? (
+        <RecipeFilterBar
+          search={searchInput}
+          ordering={ordering}
+          onSearchChange={handleSearchChange}
+          onOrderingChange={handleOrderingChange}
+          onReset={handleResetFilters}
+          isResetDisabled={isResetDisabled}
+        />
+
+        {shouldShowNoResultsState ? (
+          <EmptyState
+            eyebrow="Nincs találat"
+            visual="🔎"
+            title="Nincs találat a keresésre"
+            description="Próbálj meg másik keresőkifejezést vagy rendezést választani."
+            actionLabel="Szűrők törlése"
+            onAction={handleResetFilters}
+          />
+        ) : recipes.length === 0 ? (
           <EmptyState
             eyebrow="Receptkönyv"
             visual="🍲"
             title="Még nincs egyetlen recept sem"
-            description="Ez lesz az a hely, ahol a közösség receptjei megjelennek. Légy te az első, aki megoszt egy új fogást."
+            description="Ez lesz az a hely, ahol a közösség receptjei megjelennek. Jelentkezz be, és oszd meg az első receptet."
             actionLabel={
               isAuthenticated
                 ? "Első recept létrehozása"
@@ -195,15 +374,27 @@ function RecipesPage() {
             onAction={isAuthenticated ? handleCreateClick : handleRegisterClick}
           />
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {recipes.map((recipe) => (
-              <RecipeCard
-                key={recipe.id}
-                recipe={recipe}
-                onDeleteSuccess={handleRecipeDeleted}
+          <>
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {recipes.map((recipe) => (
+                <RecipeCard
+                  key={recipe.id}
+                  recipe={recipe}
+                  onDeleteSuccess={handleRecipeDeleted}
+                />
+              ))}
+            </div>
+
+            {shouldShowPagination ? (
+              <PaginationControls
+                currentPage={currentPage}
+                hasPreviousPage={hasPreviousPage}
+                hasNextPage={hasNextPage}
+                onPreviousPage={handlePreviousPage}
+                onNextPage={handleNextPage}
               />
-            ))}
-          </div>
+            ) : null}
+          </>
         )}
       </div>
     </section>

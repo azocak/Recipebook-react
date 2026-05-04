@@ -1,4 +1,6 @@
-export type RecipeListFilters = Record<string, unknown>;
+import type { RecipeListParams } from "../api/types";
+
+export type RecipeListFilters = RecipeListParams;
 
 export const queryKeys = {
   recipes: {

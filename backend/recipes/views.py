@@ -2,7 +2,7 @@ from django.contrib.auth import login, logout
 from django.db import IntegrityError, transaction
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
-from rest_framework import status, viewsets
+from rest_framework import filters, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Recipe
+from .pagination import RecipePagination
 from .permissions import IsOwnerOrReadOnly
 from .serializers import (
     LoginSerializer,
@@ -72,6 +73,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
     permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["title"]
+    ordering_fields = ["created_at", "title"]
+    ordering = ["-created_at"]
+    pagination_class = RecipePagination
 
     def get_queryset(self):
         return Recipe.objects.select_related("owner").order_by("-created_at")

@@ -1,9 +1,9 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import RecipesPage from "./RecipesPage";
 import { setAuthenticatedUser, setGuestAuth } from "../test/auth-fixtures";
 import { ApiError } from "../api/errors";
 import userEvent from "@testing-library/user-event";
-import { mockRecipes } from "../test/recipe-fixtures";
+import { createPaginatedRecipes, mockRecipes } from "../test/recipe-fixtures";
 import { renderRoute } from "../test/router";
 import { createTestQueryClient } from "../test/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -30,7 +30,7 @@ vi.mock("../auth/AuthContext", () => ({
 
 vi.mock("../api/recipes", () => ({
   recipesApi: {
-    getAll: () => mockGetAll(),
+    getAll: (...args: unknown[]) => mockGetAll(...args),
   },
 }));
 
@@ -51,7 +51,7 @@ vi.mock("../components/RecipeCard", () => ({
   ),
 }));
 
-function renderRecipesPage() {
+function renderRecipesPage(entry = "/recipes") {
   const queryClient = createTestQueryClient();
 
   return {
@@ -62,7 +62,7 @@ function renderRecipesPage() {
       </QueryClientProvider>,
       {
         path: "/recipes",
-        entry: "/recipes",
+        entry,
       },
     ),
   };
@@ -81,7 +81,7 @@ async function renderPageWithRecipes({
     setGuestAuth(mockUseAuth);
   }
 
-  mockGetAll.mockResolvedValue(recipes);
+  mockGetAll.mockResolvedValue(createPaginatedRecipes(recipes));
   renderRecipesPage();
 
   if (recipes.length === 0) {
@@ -111,6 +111,10 @@ describe("RecipesPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setGuestAuth(mockUseAuth);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("shows the recipe list skeleton while fetching recipes", () => {
@@ -212,6 +216,166 @@ describe("RecipesPage", () => {
     ).toHaveAttribute("href", "/login");
   });
 
+  it("shows a no-results empty state when filters return no recipes", async () => {
+    mockGetAll.mockResolvedValue(
+      createPaginatedRecipes([], {
+        count: 0,
+        next: null,
+        previous: null,
+      }),
+    );
+
+    renderRecipesPage("/recipes?search=tiramisu");
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Nincs találat a keresésre",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        "Próbálj meg másik keresőkifejezést vagy rendezést választani.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(screen.getByLabelText("Keresés")).toHaveValue("tiramisu");
+
+    const noResultsState = screen.getByRole("status");
+
+    expect(
+      within(noResultsState).getByRole("button", { name: "Szűrők törlése" }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole("button", {
+        name: "Regisztráció a receptfeltöltéshez",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("resets filters from the no-results empty state", async () => {
+    const user = userEvent.setup();
+
+    mockGetAll
+      .mockResolvedValueOnce(
+        createPaginatedRecipes([], {
+          count: 0,
+          next: null,
+          previous: null,
+        }),
+      )
+      .mockResolvedValueOnce(createPaginatedRecipes(mockRecipes));
+
+    renderRecipesPage("/recipes?search=tiramisu");
+
+    await screen.findByRole("heading", {
+      name: "Nincs találat a keresésre",
+    });
+
+    const noResultsState = screen.getByRole("status");
+
+    await user.click(
+      within(noResultsState).getByRole("button", { name: "Szűrők törlése" }),
+    );
+    await waitFor(() => {
+      expect(mockGetAll).toHaveBeenLastCalledWith({});
+    });
+
+    expect(screen.getByLabelText("Keresés")).toHaveValue("");
+  });
+  it("uses recipe list URL params when fetching recipes", async () => {
+    mockGetAll.mockResolvedValue(createPaginatedRecipes(mockRecipes));
+
+    renderRecipesPage("/recipes?search=pala&ordering=title");
+
+    await screen.findByRole("heading", { name: "Receptkönyv" });
+
+    expect(screen.getByLabelText("Keresés")).toHaveValue("pala");
+    expect(screen.getByLabelText("Rendezés")).toHaveValue("title");
+
+    await waitFor(() => {
+      expect(mockGetAll).toHaveBeenCalledWith({
+        search: "pala",
+        ordering: "title",
+      });
+    });
+  });
+
+  it("debounces search changes before fetching recipes", async () => {
+    const user = userEvent.setup();
+
+    mockGetAll.mockResolvedValue(createPaginatedRecipes(mockRecipes));
+
+    renderRecipesPage();
+
+    await screen.findByRole("heading", { name: "Receptkönyv" });
+
+    expect(mockGetAll).toHaveBeenCalledWith({});
+
+    await user.type(screen.getByLabelText("Keresés"), "pala");
+
+    expect(screen.getByLabelText("Keresés")).toHaveValue("pala");
+    expect(mockGetAll).toHaveBeenCalledTimes(1);
+
+    await waitFor(
+      () => {
+        expect(mockGetAll).toHaveBeenLastCalledWith({
+          search: "pala",
+        });
+      },
+      {
+        timeout: 2500,
+      },
+    );
+  });
+
+  it("fetches the next recipe page from pagination controls", async () => {
+    const user = userEvent.setup();
+
+    mockGetAll.mockResolvedValue(
+      createPaginatedRecipes(mockRecipes, {
+        next: "http://testserver/api/recipes/?page=2",
+        previous: null,
+      }),
+    );
+
+    renderRecipesPage();
+
+    await screen.findByRole("heading", { name: "Receptkönyv" });
+
+    expect(screen.getByText("1. oldal")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Következő oldal" }));
+
+    await waitFor(() => {
+      expect(mockGetAll).toHaveBeenLastCalledWith({
+        page: 2,
+      });
+    });
+  });
+
+  it("resets recipe list filters from the filter bar", async () => {
+    const user = userEvent.setup();
+
+    mockGetAll.mockResolvedValue(createPaginatedRecipes(mockRecipes));
+
+    renderRecipesPage("/recipes?search=pala&ordering=title&page=2");
+
+    await screen.findByRole("heading", { name: "Receptkönyv" });
+
+    expect(screen.getByLabelText("Keresés")).toHaveValue("pala");
+    expect(screen.getByLabelText("Rendezés")).toHaveValue("title");
+
+    await user.click(screen.getByRole("button", { name: "Szűrők törlése" }));
+
+    await waitFor(() => {
+      expect(mockGetAll).toHaveBeenLastCalledWith({});
+    });
+
+    expect(screen.getByLabelText("Keresés")).toHaveValue("");
+    expect(screen.getByLabelText("Rendezés")).toHaveValue("");
+  });
   it("shows the create button for authenticated users and navigates on click", async () => {
     const user = userEvent.setup();
 
@@ -239,7 +403,7 @@ describe("RecipesPage", () => {
       .mockRejectedValueOnce(
         new ApiError("Első hiba", 500, { detail: "Első hiba" }),
       )
-      .mockResolvedValueOnce(mockRecipes);
+      .mockResolvedValueOnce(createPaginatedRecipes(mockRecipes));
 
     renderRecipesPage();
 

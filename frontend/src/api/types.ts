@@ -20,6 +20,21 @@ export interface Recipe {
   created_at: string;
 }
 
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+export type RecipeOrdering = "created_at" | "-created_at" | "title" | "-title";
+
+export interface RecipeListParams {
+  search?: string;
+  ordering?: RecipeOrdering;
+  page?: number;
+}
+
 export interface RecipeFormData {
   title: string;
   ingredients: string;
