@@ -190,6 +190,9 @@ function RecipesPage() {
   const hasPreviousPage = Boolean(recipePage?.previous);
   const hasNextPage = Boolean(recipePage?.next);
   const shouldShowPagination = hasPreviousPage || hasNextPage;
+  const hasActiveRecipeListFilters = Boolean(searchInput.trim() || ordering);
+  const shouldShowNoResultsState =
+    recipes.length === 0 && hasActiveRecipeListFilters;
   const isResetDisabled = !searchInput.trim() && !ordering && currentPage === 1;
 
   function handlePageChange(nextPage: number) {
@@ -348,12 +351,21 @@ function RecipesPage() {
           isResetDisabled={isResetDisabled}
         />
 
-        {recipes.length === 0 ? (
+        {shouldShowNoResultsState ? (
+          <EmptyState
+            eyebrow="Nincs találat"
+            visual="🔎"
+            title="Nincs találat a keresésre"
+            description="Próbálj meg másik keresőkifejezést vagy rendezést választani."
+            actionLabel="Szűrők törlése"
+            onAction={handleResetFilters}
+          />
+        ) : recipes.length === 0 ? (
           <EmptyState
             eyebrow="Receptkönyv"
             visual="🍲"
             title="Még nincs egyetlen recept sem"
-            description="Ez lesz az a hely, ahol a közösség receptjei megjelennek. Légy te az első, aki megoszt egy új fogást."
+            description="Ez lesz az a hely, ahol a közösség receptjei megjelennek. Jelentkezz be, és oszd meg az első receptet."
             actionLabel={
               isAuthenticated
                 ? "Első recept létrehozása"
@@ -362,26 +374,28 @@ function RecipesPage() {
             onAction={isAuthenticated ? handleCreateClick : handleRegisterClick}
           />
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {recipes.map((recipe) => (
-              <RecipeCard
-                key={recipe.id}
-                recipe={recipe}
-                onDeleteSuccess={handleRecipeDeleted}
-              />
-            ))}
-          </div>
-        )}
+          <>
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {recipes.map((recipe) => (
+                <RecipeCard
+                  key={recipe.id}
+                  recipe={recipe}
+                  onDeleteSuccess={handleRecipeDeleted}
+                />
+              ))}
+            </div>
 
-        {shouldShowPagination ? (
-          <PaginationControls
-            currentPage={currentPage}
-            hasPreviousPage={hasPreviousPage}
-            hasNextPage={hasNextPage}
-            onPreviousPage={handlePreviousPage}
-            onNextPage={handleNextPage}
-          />
-        ) : null}
+            {shouldShowPagination ? (
+              <PaginationControls
+                currentPage={currentPage}
+                hasPreviousPage={hasPreviousPage}
+                hasNextPage={hasNextPage}
+                onPreviousPage={handlePreviousPage}
+                onNextPage={handleNextPage}
+              />
+            ) : null}
+          </>
+        )}
       </div>
     </section>
   );

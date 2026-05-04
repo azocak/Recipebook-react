@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import RecipesPage from "./RecipesPage";
 import { setAuthenticatedUser, setGuestAuth } from "../test/auth-fixtures";
 import { ApiError } from "../api/errors";
@@ -216,6 +216,74 @@ describe("RecipesPage", () => {
     ).toHaveAttribute("href", "/login");
   });
 
+  it("shows a no-results empty state when filters return no recipes", async () => {
+    mockGetAll.mockResolvedValue(
+      createPaginatedRecipes([], {
+        count: 0,
+        next: null,
+        previous: null,
+      }),
+    );
+
+    renderRecipesPage("/recipes?search=tiramisu");
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Nincs találat a keresésre",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        "Próbálj meg másik keresőkifejezést vagy rendezést választani.",
+      ),
+    ).toBeInTheDocument();
+
+    expect(screen.getByLabelText("Keresés")).toHaveValue("tiramisu");
+
+    const noResultsState = screen.getByRole("status");
+
+    expect(
+      within(noResultsState).getByRole("button", { name: "Szűrők törlése" }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole("button", {
+        name: "Regisztráció a receptfeltöltéshez",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("resets filters from the no-results empty state", async () => {
+    const user = userEvent.setup();
+
+    mockGetAll
+      .mockResolvedValueOnce(
+        createPaginatedRecipes([], {
+          count: 0,
+          next: null,
+          previous: null,
+        }),
+      )
+      .mockResolvedValueOnce(createPaginatedRecipes(mockRecipes));
+
+    renderRecipesPage("/recipes?search=tiramisu");
+
+    await screen.findByRole("heading", {
+      name: "Nincs találat a keresésre",
+    });
+
+    const noResultsState = screen.getByRole("status");
+
+    await user.click(
+      within(noResultsState).getByRole("button", { name: "Szűrők törlése" }),
+    );
+    await waitFor(() => {
+      expect(mockGetAll).toHaveBeenLastCalledWith({});
+    });
+
+    expect(screen.getByLabelText("Keresés")).toHaveValue("");
+  });
   it("uses recipe list URL params when fetching recipes", async () => {
     mockGetAll.mockResolvedValue(createPaginatedRecipes(mockRecipes));
 
