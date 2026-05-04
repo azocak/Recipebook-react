@@ -1,7 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
-import type { PaginatedResponse, Recipe } from "../api/types";
+import type {
+  PaginatedResponse,
+  Recipe,
+  RecipeListParams,
+  RecipeOrdering,
+} from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import RecipeCard from "../components/RecipeCard";
 import { EmptyState } from "../components/ui/EmptyState";
@@ -13,6 +18,34 @@ import { Skeleton } from "../components/ui/Skeleton";
 import { Spinner } from "../components/ui/Spinner";
 import { PageHeader } from "../components/ui/PageHeader";
 import { RecipeMeta } from "../components/recipe/RecipeMeta";
+import { RECIPE_ORDERING_OPTIONS } from "../constants/recipe";
+import { RecipeFilterBar } from "../components/recipe/RecipeFilterBar";
+
+function getRecipeOrdering(value: string | null): RecipeOrdering | "" {
+  return RECIPE_ORDERING_OPTIONS.some((option) => option.value === value)
+    ? (value as RecipeOrdering)
+    : "";
+}
+
+function getRecipePage(value: string | null): number | undefined {
+  const page = Number(value);
+
+  return Number.isInteger(page) && page > 1 ? page : undefined;
+}
+
+function buildRecipeListParams(
+  searchParams: URLSearchParams,
+): RecipeListParams {
+  const search = searchParams.get("search")?.trim();
+  const ordering = getRecipeOrdering(searchParams.get("ordering"));
+  const page = getRecipePage(searchParams.get("page"));
+
+  return {
+    ...(search ? { search } : {}),
+    ...(ordering ? { ordering } : {}),
+    ...(page ? { page } : {}),
+  };
+}
 
 function RecipesPageSkeleton() {
   return (
@@ -94,6 +127,12 @@ function RecipesPage() {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const search = searchParams.get("search") ?? "";
+  const ordering = getRecipeOrdering(searchParams.get("ordering"));
+  const currentPage = getRecipePage(searchParams.get("page")) ?? 1;
+  const recipeListParams = buildRecipeListParams(searchParams);
 
   const {
     data: recipePage,
@@ -101,10 +140,11 @@ function RecipesPage() {
     isError,
     isPending,
     refetch,
-  } = useRecipesQuery();
+  } = useRecipesQuery(recipeListParams);
 
   const recipes = recipePage?.results ?? [];
   const recipeCount = recipePage?.count ?? 0;
+  const isResetDisabled = !search.trim() && !ordering && currentPage === 1;
 
   function handleCreateClick() {
     navigate("/recipes/new");
@@ -114,9 +154,53 @@ function RecipesPage() {
     navigate("/register");
   }
 
+  function updateRecipeListSearchParams(
+    updateParams: (nextParams: URLSearchParams) => void,
+  ) {
+    setSearchParams((currentParams) => {
+      const nextParams = new URLSearchParams(currentParams);
+
+      updateParams(nextParams);
+
+      return nextParams;
+    });
+  }
+
+  function handleSearchChange(nextSearch: string) {
+    updateRecipeListSearchParams((nextParams) => {
+      if (nextSearch.trim()) {
+        nextParams.set("search", nextSearch);
+      } else {
+        nextParams.delete("search");
+      }
+
+      nextParams.delete("page");
+    });
+  }
+
+  function handleOrderingChange(nextOrdering: RecipeOrdering | "") {
+    updateRecipeListSearchParams((nextParams) => {
+      if (nextOrdering) {
+        nextParams.set("ordering", nextOrdering);
+      } else {
+        nextParams.delete("ordering");
+      }
+
+      nextParams.delete("page");
+    });
+  }
+
+  function handleResetFilters() {
+    updateRecipeListSearchParams((nextParams) => {
+      nextParams.delete("search");
+      nextParams.delete("ordering");
+      nextParams.delete("page");
+    });
+  }
+
   function handleRecipeDeleted(deletedRecipeId: number) {
     queryClient.setQueryData<PaginatedResponse<Recipe>>(
-      queryKeys.recipes.list(),
+      queryKeys.recipes.list(recipeListParams),
       (currentPage) => {
         if (!currentPage) {
           return currentPage;
@@ -195,6 +279,15 @@ function RecipesPage() {
               </Link>
             )
           }
+        />
+
+        <RecipeFilterBar
+          search={search}
+          ordering={ordering}
+          onSearchChange={handleSearchChange}
+          onOrderingChange={handleOrderingChange}
+          onReset={handleResetFilters}
+          isResetDisabled={isResetDisabled}
         />
 
         {recipes.length === 0 ? (

@@ -44,7 +44,7 @@ export function RecipeFilterBar({
         className,
       )}
     >
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(220px,280px)_auto] lg:items-end">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(220px,280px)_auto] lg:items-start">
         <Input
           type="search"
           label="Keresés"
@@ -82,7 +82,7 @@ export function RecipeFilterBar({
           onClick={onReset}
           disabled={isResetDisabled}
           fullWidth
-          className="lg:w-auto"
+          className="lg:w-auto lg:mt-9"
         >
           Szűrők törlése
         </Button>

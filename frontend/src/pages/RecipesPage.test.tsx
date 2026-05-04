@@ -51,7 +51,7 @@ vi.mock("../components/RecipeCard", () => ({
   ),
 }));
 
-function renderRecipesPage() {
+function renderRecipesPage(entry = "/recipes") {
   const queryClient = createTestQueryClient();
 
   return {
@@ -62,7 +62,7 @@ function renderRecipesPage() {
       </QueryClientProvider>,
       {
         path: "/recipes",
-        entry: "/recipes",
+        entry,
       },
     ),
   };
@@ -212,6 +212,45 @@ describe("RecipesPage", () => {
     ).toHaveAttribute("href", "/login");
   });
 
+  it("uses recipe list URL params when fetching recipes", async () => {
+    mockGetAll.mockResolvedValue(createPaginatedRecipes(mockRecipes));
+
+    renderRecipesPage("/recipes?search=pala&ordering=title");
+
+    await screen.findByRole("heading", { name: "Receptkönyv" });
+
+    expect(screen.getByLabelText("Keresés")).toHaveValue("pala");
+    expect(screen.getByLabelText("Rendezés")).toHaveValue("title");
+
+    await waitFor(() => {
+      expect(mockGetAll).toHaveBeenCalledWith({
+        search: "pala",
+        ordering: "title",
+      });
+    });
+  });
+
+  it("resets recipe list filters from the filter bar", async () => {
+    const user = userEvent.setup();
+
+    mockGetAll.mockResolvedValue(createPaginatedRecipes(mockRecipes));
+
+    renderRecipesPage("/recipes?search=pala&ordering=title&page=2");
+
+    await screen.findByRole("heading", { name: "Receptkönyv" });
+
+    expect(screen.getByLabelText("Keresés")).toHaveValue("pala");
+    expect(screen.getByLabelText("Rendezés")).toHaveValue("title");
+
+    await user.click(screen.getByRole("button", { name: "Szűrők törlése" }));
+
+    await waitFor(() => {
+      expect(mockGetAll).toHaveBeenLastCalledWith({});
+    });
+
+    expect(screen.getByLabelText("Keresés")).toHaveValue("");
+    expect(screen.getByLabelText("Rendezés")).toHaveValue("");
+  });
   it("shows the create button for authenticated users and navigates on click", async () => {
     const user = userEvent.setup();
 
