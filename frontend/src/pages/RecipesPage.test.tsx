@@ -262,6 +262,31 @@ describe("RecipesPage", () => {
     );
   });
 
+  it("fetches the next recipe page from pagination controls", async () => {
+    const user = userEvent.setup();
+
+    mockGetAll.mockResolvedValue(
+      createPaginatedRecipes(mockRecipes, {
+        next: "http://testserver/api/recipes/?page=2",
+        previous: null,
+      }),
+    );
+
+    renderRecipesPage();
+
+    await screen.findByRole("heading", { name: "Receptkönyv" });
+
+    expect(screen.getByText("1. oldal")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Következő oldal" }));
+
+    await waitFor(() => {
+      expect(mockGetAll).toHaveBeenLastCalledWith({
+        page: 2,
+      });
+    });
+  });
+
   it("resets recipe list filters from the filter bar", async () => {
     const user = userEvent.setup();
 

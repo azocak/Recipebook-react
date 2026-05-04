@@ -22,6 +22,7 @@ import { RECIPE_ORDERING_OPTIONS } from "../constants/recipe";
 import { RecipeFilterBar } from "../components/recipe/RecipeFilterBar";
 import { useEffect, useState } from "react";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
+import { PaginationControls } from "../components/ui/PaginationControls";
 
 const RECIPE_SEARCH_DEBOUNCE_MS = 1000;
 
@@ -186,7 +187,29 @@ function RecipesPage() {
 
   const recipes = recipePage?.results ?? [];
   const recipeCount = recipePage?.count ?? 0;
+  const hasPreviousPage = Boolean(recipePage?.previous);
+  const hasNextPage = Boolean(recipePage?.next);
+  const shouldShowPagination = hasPreviousPage || hasNextPage;
   const isResetDisabled = !searchInput.trim() && !ordering && currentPage === 1;
+
+  function handlePageChange(nextPage: number) {
+    updateRecipeListSearchParams((nextParams) => {
+      if (nextPage > 1) {
+        nextParams.set("page", String(nextPage));
+      } else {
+        nextParams.delete("page");
+      }
+    });
+  }
+
+  function handlePreviousPage() {
+    handlePageChange(Math.max(currentPage - 1, 1));
+  }
+
+  function handleNextPage() {
+    handlePageChange(currentPage + 1);
+  }
+
   function handleCreateClick() {
     navigate("/recipes/new");
   }
@@ -349,6 +372,16 @@ function RecipesPage() {
             ))}
           </div>
         )}
+
+        {shouldShowPagination ? (
+          <PaginationControls
+            currentPage={currentPage}
+            hasPreviousPage={hasPreviousPage}
+            hasNextPage={hasNextPage}
+            onPreviousPage={handlePreviousPage}
+            onNextPage={handleNextPage}
+          />
+        ) : null}
       </div>
     </section>
   );
