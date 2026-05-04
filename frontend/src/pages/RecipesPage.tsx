@@ -20,6 +20,10 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { RecipeMeta } from "../components/recipe/RecipeMeta";
 import { RECIPE_ORDERING_OPTIONS } from "../constants/recipe";
 import { RecipeFilterBar } from "../components/recipe/RecipeFilterBar";
+import { useEffect, useState } from "react";
+import { useDebouncedValue } from "../hooks/useDebouncedValue";
+
+const RECIPE_SEARCH_DEBOUNCE_MS = 1000;
 
 function getRecipeOrdering(value: string | null): RecipeOrdering | "" {
   return RECIPE_ORDERING_OPTIONS.some((option) => option.value === value)
@@ -129,10 +133,48 @@ function RecipesPage() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const search = searchParams.get("search") ?? "";
+  const urlSearch = searchParams.get("search") ?? "";
   const ordering = getRecipeOrdering(searchParams.get("ordering"));
   const currentPage = getRecipePage(searchParams.get("page")) ?? 1;
   const recipeListParams = buildRecipeListParams(searchParams);
+
+  const [searchInput, setSearchInput] = useState(urlSearch);
+  const debouncedSearch = useDebouncedValue(
+    searchInput,
+    RECIPE_SEARCH_DEBOUNCE_MS,
+  );
+
+  useEffect(() => {
+    setSearchInput(urlSearch);
+  }, [urlSearch]);
+
+  useEffect(() => {
+    const normalizedSearchInput = searchInput.trim();
+    const normalizedDebouncedSearch = debouncedSearch.trim();
+    const normalizedUrlSearch = urlSearch.trim();
+
+    if (normalizedDebouncedSearch !== normalizedSearchInput) {
+      return;
+    }
+
+    if (normalizedDebouncedSearch === normalizedUrlSearch) {
+      return;
+    }
+
+    setSearchParams((currentParams) => {
+      const nextParams = new URLSearchParams(currentParams);
+
+      if (normalizedDebouncedSearch) {
+        nextParams.set("search", normalizedDebouncedSearch);
+      } else {
+        nextParams.delete("search");
+      }
+
+      nextParams.delete("page");
+
+      return nextParams;
+    });
+  }, [debouncedSearch, searchInput, setSearchParams, urlSearch]);
 
   const {
     data: recipePage,
@@ -144,8 +186,7 @@ function RecipesPage() {
 
   const recipes = recipePage?.results ?? [];
   const recipeCount = recipePage?.count ?? 0;
-  const isResetDisabled = !search.trim() && !ordering && currentPage === 1;
-
+  const isResetDisabled = !searchInput.trim() && !ordering && currentPage === 1;
   function handleCreateClick() {
     navigate("/recipes/new");
   }
@@ -167,15 +208,7 @@ function RecipesPage() {
   }
 
   function handleSearchChange(nextSearch: string) {
-    updateRecipeListSearchParams((nextParams) => {
-      if (nextSearch.trim()) {
-        nextParams.set("search", nextSearch);
-      } else {
-        nextParams.delete("search");
-      }
-
-      nextParams.delete("page");
-    });
+    setSearchInput(nextSearch);
   }
 
   function handleOrderingChange(nextOrdering: RecipeOrdering | "") {
@@ -191,6 +224,8 @@ function RecipesPage() {
   }
 
   function handleResetFilters() {
+    setSearchInput("");
+
     updateRecipeListSearchParams((nextParams) => {
       nextParams.delete("search");
       nextParams.delete("ordering");
@@ -282,7 +317,7 @@ function RecipesPage() {
         />
 
         <RecipeFilterBar
-          search={search}
+          search={searchInput}
           ordering={ordering}
           onSearchChange={handleSearchChange}
           onOrderingChange={handleOrderingChange}

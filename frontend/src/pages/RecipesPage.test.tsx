@@ -113,6 +113,10 @@ describe("RecipesPage", () => {
     setGuestAuth(mockUseAuth);
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("shows the recipe list skeleton while fetching recipes", () => {
     mockGetAll.mockReturnValue(new Promise(() => {}));
 
@@ -228,6 +232,34 @@ describe("RecipesPage", () => {
         ordering: "title",
       });
     });
+  });
+
+  it("debounces search changes before fetching recipes", async () => {
+    const user = userEvent.setup();
+
+    mockGetAll.mockResolvedValue(createPaginatedRecipes(mockRecipes));
+
+    renderRecipesPage();
+
+    await screen.findByRole("heading", { name: "Receptkönyv" });
+
+    expect(mockGetAll).toHaveBeenCalledWith({});
+
+    await user.type(screen.getByLabelText("Keresés"), "pala");
+
+    expect(screen.getByLabelText("Keresés")).toHaveValue("pala");
+    expect(mockGetAll).toHaveBeenCalledTimes(1);
+
+    await waitFor(
+      () => {
+        expect(mockGetAll).toHaveBeenLastCalledWith({
+          search: "pala",
+        });
+      },
+      {
+        timeout: 2500,
+      },
+    );
   });
 
   it("resets recipe list filters from the filter bar", async () => {
