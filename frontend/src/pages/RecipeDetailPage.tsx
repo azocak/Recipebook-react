@@ -10,6 +10,8 @@ import { RecipeQueryErrorState } from "../components/recipe/RecipeQueryErrorStat
 import { isRecipeQueryErrorStatus } from "../components/recipe/recipeQueryErrorStateUtils";
 import { PageHeader } from "../components/ui/PageHeader";
 import { RecipeMeta } from "../components/recipe/RecipeMeta";
+import { useState } from "react";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 
 function formatDateTime(value: string) {
   return new Date(value).toLocaleString("hu-HU", {
@@ -89,6 +91,7 @@ export default function RecipeDetailPage() {
 
   const { recipe, status, errorMessage } = useRecipeQuery(id);
   const deleteRecipeMutation = useDeleteRecipeMutation();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const deleting = deleteRecipeMutation.isPending;
 
@@ -121,26 +124,28 @@ export default function RecipeDetailPage() {
   const recipeId = recipe.id;
   const isOwner = !!user && user.id === recipe.owner;
 
-  async function handleDelete() {
-    if (!recipe) {
+  function handleOpenDeleteDialog() {
+    setIsDeleteDialogOpen(true);
+  }
+
+  function handleCancelDelete() {
+    if (deleting) {
       return;
     }
 
-    const confirmed = window.confirm(
-      "Biztosan törölni szeretnéd ezt a receptet?",
-    );
+    setIsDeleteDialogOpen(false);
+  }
 
-    if (!confirmed) {
-      return;
-    }
-
+  async function handleConfirmDelete() {
     try {
       await deleteRecipeMutation.mutateAsync({
-        recipeId: recipeId,
+        recipeId,
       });
 
+      setIsDeleteDialogOpen(false);
       navigate("/recipes");
     } catch {
+      setIsDeleteDialogOpen(false);
       // A hibát a mutation állapota kezeli, és deleteError alapján jelenítjük meg.
     }
   }
@@ -192,7 +197,7 @@ export default function RecipeDetailPage() {
 
                   <button
                     type="button"
-                    onClick={handleDelete}
+                    onClick={handleOpenDeleteDialog}
                     disabled={deleting}
                     className="inline-flex cursor-pointer items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold text-red-700 transition hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
                   >
@@ -251,6 +256,23 @@ export default function RecipeDetailPage() {
           </div>
         </article>
       </div>
+
+      <ConfirmDialog
+        open={isDeleteDialogOpen}
+        title="Recept törlése"
+        description={
+          <>
+            Biztosan törölni szeretnéd a(z) <strong>{recipe.title}</strong>{" "}
+            receptet? Ez a művelet nem vonható vissza.
+          </>
+        }
+        confirmLabel="Törlés"
+        cancelLabel="Mégse"
+        intent="danger"
+        isLoading={deleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </section>
   );
 }
