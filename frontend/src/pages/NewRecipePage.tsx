@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import type { RecipeFormData, RecipeImageFormData } from "../api/types";
 import RecipeForm from "../components/RecipeForm";
-import { useCreateRecipeMutation } from "../hooks/mutations/useCreateRecipeMutation";
-import { PageHeader } from "../components/ui/PageHeader";
 import { RecipeMeta } from "../components/recipe/RecipeMeta";
+import { PageHeader } from "../components/ui/PageHeader";
+import { useCreateRecipeMutation } from "../hooks/mutations/useCreateRecipeMutation";
+import { useBeforeUnloadWarning } from "../hooks/useBeforeUnloadWarning";
 
 const defaultValues: RecipeFormData = {
   title: "",
@@ -17,6 +19,9 @@ const defaultValues: RecipeFormData = {
 export default function NewRecipePage() {
   const navigate = useNavigate();
   const createRecipeMutation = useCreateRecipeMutation();
+  const [isRecipeFormDirty, setIsRecipeFormDirty] = useState(false);
+
+  useBeforeUnloadWarning(isRecipeFormDirty);
 
   async function handleSubmit(data: RecipeImageFormData) {
     const createdRecipe = await createRecipeMutation.mutateAsync(data);
@@ -59,6 +64,7 @@ export default function NewRecipePage() {
               initialImageUrl={null}
               onSubmit={handleSubmit}
               submitLabel="Recept mentése"
+              onDirtyChange={setIsRecipeFormDirty}
             />
           </div>
         </div>

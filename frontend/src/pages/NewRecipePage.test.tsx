@@ -11,6 +11,7 @@ import { queryKeys } from "../lib/queryKeys";
 const mockNavigate = vi.fn();
 const mockCreateRecipe = vi.fn();
 const mockRecipeFormProps = vi.fn();
+const mockUseBeforeUnloadWarning = vi.fn();
 
 const defaultSubmitPayload: RecipeImageFormData = {
   title: "",
@@ -21,6 +22,11 @@ const defaultSubmitPayload: RecipeImageFormData = {
 };
 
 let mockSubmitPayload: RecipeImageFormData = defaultSubmitPayload;
+
+vi.mock("../hooks/useBeforeUnloadWarning", () => ({
+  useBeforeUnloadWarning: (shouldWarn: boolean) =>
+    mockUseBeforeUnloadWarning(shouldWarn),
+}));
 
 vi.mock("react-router-dom", async () => {
   const actual =
@@ -46,16 +52,19 @@ vi.mock("../components/RecipeForm", () => ({
     initialImageUrl,
     onSubmit,
     submitLabel,
+    onDirtyChange,
   }: {
     initialValues: RecipeFormData;
     initialImageUrl?: string | null;
     onSubmit: (data: RecipeImageFormData) => Promise<void>;
     submitLabel: string;
+    onDirtyChange?: (isDirty: boolean) => void;
   }) => {
     mockRecipeFormProps({
       initialValues,
       initialImageUrl,
       submitLabel,
+      onDirtyChange,
     });
 
     return (
@@ -82,6 +91,14 @@ vi.mock("../components/RecipeForm", () => ({
           }}
         >
           {submitLabel}
+        </button>
+
+        <button type="button" onClick={() => onDirtyChange?.(true)}>
+          Mark form dirty
+        </button>
+
+        <button type="button" onClick={() => onDirtyChange?.(false)}>
+          Mark form clean
         </button>
       </div>
     );
@@ -133,6 +150,7 @@ describe("NewRecipePage", () => {
       },
       initialImageUrl: null,
       submitLabel: "Recept mentése",
+      onDirtyChange: expect.any(Function),
     });
 
     expect(screen.getByTestId("initial-title")).toHaveTextContent("");
@@ -143,6 +161,43 @@ describe("NewRecipePage", () => {
     expect(screen.getByTestId("initial-image-url")).toHaveTextContent("");
   });
 
+  it("keeps the beforeunload warning disabled initially", () => {
+    renderNewRecipePage();
+
+    expect(mockUseBeforeUnloadWarning).toHaveBeenLastCalledWith(false);
+  });
+
+  it("enables the beforeunload warning when the recipe form becomes dirty", async () => {
+    const user = userEvent.setup();
+
+    renderNewRecipePage();
+
+    expect(mockUseBeforeUnloadWarning).toHaveBeenLastCalledWith(false);
+
+    await user.click(screen.getByRole("button", { name: "Mark form dirty" }));
+
+    await waitFor(() => {
+      expect(mockUseBeforeUnloadWarning).toHaveBeenLastCalledWith(true);
+    });
+  });
+
+  it("disables the beforeunload warning when the recipe form becomes clean again", async () => {
+    const user = userEvent.setup();
+
+    renderNewRecipePage();
+
+    await user.click(screen.getByRole("button", { name: "Mark form dirty" }));
+
+    await waitFor(() => {
+      expect(mockUseBeforeUnloadWarning).toHaveBeenLastCalledWith(true);
+    });
+
+    await user.click(screen.getByRole("button", { name: "Mark form clean" }));
+
+    await waitFor(() => {
+      expect(mockUseBeforeUnloadWarning).toHaveBeenLastCalledWith(false);
+    });
+  });
   it("creates the recipe, updates the detail cache and navigates to the detail page", async () => {
     const user = userEvent.setup();
     const imageFile = new File(["fake-image"], "new-recipe.png", {
