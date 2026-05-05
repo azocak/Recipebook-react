@@ -89,17 +89,13 @@ export default function RecipeForm({
     mode: "onSubmit",
   });
 
-  const selectedImage =
-    useWatch({
-      control,
-      name: "image",
-    }) ?? null;
-
-  const removeImage =
-    useWatch({
-      control,
-      name: "remove_image",
-    }) ?? false;
+  const {
+    title: initialTitle,
+    ingredients: initialIngredients,
+    instructions: initialInstructions,
+    cooking_time: initialCookingTime,
+    servings: initialServings,
+  } = initialValues;
 
   useEffect(() => {
     register("image");
@@ -112,11 +108,37 @@ export default function RecipeForm({
 
   useEffect(() => {
     reset({
-      ...getRecipeFormInitialState(initialValues),
+      ...getRecipeFormInitialState({
+        title: initialTitle,
+        ingredients: initialIngredients,
+        instructions: initialInstructions,
+        cooking_time: initialCookingTime,
+        servings: initialServings,
+      }),
       image: undefined,
       remove_image: false,
     });
-  }, [initialValues, initialImageUrl, reset]);
+  }, [
+    initialTitle,
+    initialIngredients,
+    initialInstructions,
+    initialCookingTime,
+    initialServings,
+    initialImageUrl,
+    reset,
+  ]);
+
+  const selectedImage =
+    useWatch({
+      control,
+      name: "image",
+    }) ?? null;
+
+  const removeImage =
+    useWatch({
+      control,
+      name: "remove_image",
+    }) ?? false;
 
   const previewUrl = useMemo(() => {
     if (!selectedImage) {

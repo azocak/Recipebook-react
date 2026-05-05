@@ -190,6 +190,37 @@ describe("RecipeForm", () => {
     expect(screen.getByText("Nincs feltöltött kép")).toBeInTheDocument();
   });
 
+  it("does not reset the form when rerendered with the same initial values", async () => {
+    const user = userEvent.setup();
+
+    const { rerender } = render(
+      <RecipeForm
+        initialValues={validData}
+        initialImageUrl={null}
+        onSubmit={vi.fn().mockResolvedValue(undefined)}
+        submitLabel="Mentés"
+      />,
+    );
+
+    const titleInput = screen.getByRole("textbox", { name: /recept neve/i });
+
+    await user.clear(titleInput);
+    await user.type(titleInput, "Módosított receptnév");
+
+    expect(titleInput).toHaveValue("Módosított receptnév");
+
+    rerender(
+      <RecipeForm
+        initialValues={{ ...validData }}
+        initialImageUrl={null}
+        onSubmit={vi.fn().mockResolvedValue(undefined)}
+        submitLabel="Mentés"
+      />,
+    );
+
+    expect(titleInput).toHaveValue("Módosított receptnév");
+  });
+
   it.each([
     ["title", "", "A recept neve kötelező."],
     ["title", "ab", "A recept neve legalább 3 karakter legyen."],

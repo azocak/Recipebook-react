@@ -13,6 +13,8 @@ import { RecipeQueryErrorState } from "../components/recipe/RecipeQueryErrorStat
 import { isRecipeQueryErrorStatus } from "../components/recipe/recipeQueryErrorStateUtils";
 import { PageHeader } from "../components/ui/PageHeader";
 import { RecipeMeta } from "../components/recipe/RecipeMeta";
+import { useState } from "react";
+import { useBeforeUnloadWarning } from "../hooks/useBeforeUnloadWarning";
 
 function EditRecipePageSkeleton() {
   return (
@@ -93,6 +95,9 @@ export default function EditRecipePage() {
 
   const { recipe, status, errorMessage } = useRecipeQuery(id);
   const updateRecipeMutation = useUpdateRecipeMutation();
+  const [isRecipeFormDirty, setIsRecipeFormDirty] = useState(false);
+
+  useBeforeUnloadWarning(isRecipeFormDirty);
 
   if (status === "loading") {
     return <EditRecipePageSkeleton />;
@@ -184,6 +189,7 @@ export default function EditRecipePage() {
               initialImageUrl={recipe.image_url}
               onSubmit={handleSubmit}
               submitLabel="Módosítás mentése"
+              onDirtyChange={setIsRecipeFormDirty}
             />
           </div>
         </div>
