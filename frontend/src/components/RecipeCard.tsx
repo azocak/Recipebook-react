@@ -1,4 +1,4 @@
-import type { MouseEvent } from "react";
+import { useState, type MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import type { Recipe } from "../api/types";
@@ -6,6 +6,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useDeleteRecipeMutation } from "../hooks/mutations/useDeleteRecipeMutation";
 import { getApiErrorMessage } from "../utils/getApiErrorMessage";
 import { RecipeImageBlock } from "./recipe/RecipeImageBlock";
+import { ConfirmDialog } from "./ui/ConfirmDialog";
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -16,6 +17,7 @@ function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const deleteRecipeMutation = useDeleteRecipeMutation();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const isOwner = !!user && recipe.owner === user.id;
   const deleting = deleteRecipeMutation.isPending;
@@ -32,21 +34,26 @@ function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
     navigate(`/recipes/${recipe.id}/edit`);
   };
 
-  async function handleDeleteButton(e: MouseEvent<HTMLButtonElement>) {
+  function handleDeleteButton(e: MouseEvent<HTMLButtonElement>) {
     e.stopPropagation();
+    setIsDeleteDialogOpen(true);
+  }
 
-    const confirmed = window.confirm(
-      "Biztosan törölni szeretnéd ezt a receptet?",
-    );
-
-    if (!confirmed) {
+  function handleCancelDelete() {
+    if (deleting) {
       return;
     }
 
+    setIsDeleteDialogOpen(false);
+  }
+
+  async function handleConfirmDelete() {
     try {
       await deleteRecipeMutation.mutateAsync({
         recipeId: recipe.id,
       });
+
+      setIsDeleteDialogOpen(false);
 
       if (onDeleteSuccess) {
         onDeleteSuccess(recipe.id);
@@ -54,6 +61,7 @@ function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
         navigate("/recipes");
       }
     } catch {
+      setIsDeleteDialogOpen(false);
       // A hibát a mutation állapota kezeli, és deleteError alapján jelenítjük meg.
     }
   }
@@ -157,6 +165,23 @@ function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
           </div>
         </Link>
       </div>
+
+      <ConfirmDialog
+        open={isDeleteDialogOpen}
+        title="Recept törlése"
+        description={
+          <>
+            Biztosan törölni szeretnéd a(z) <strong>{recipe.title}</strong>{" "}
+            receptet? Ez a művelet nem vonható vissza.
+          </>
+        }
+        confirmLabel="Törlés"
+        cancelLabel="Mégse"
+        intent="danger"
+        isLoading={deleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </article>
   );
 }

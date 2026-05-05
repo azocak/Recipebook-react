@@ -1,4 +1,6 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+
 import { cn } from "../../lib/cn";
 import { Button } from "./Button";
 
@@ -117,7 +119,7 @@ export function ConfirmDialog({
     return null;
   }
 
-  return (
+  const dialog = (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6">
       <div
         ref={dialogRef}
@@ -181,4 +183,6 @@ export function ConfirmDialog({
       </div>
     </div>
   );
+
+  return createPortal(dialog, document.body);
 }
