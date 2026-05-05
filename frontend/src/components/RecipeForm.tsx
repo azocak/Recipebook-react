@@ -31,6 +31,7 @@ type RecipeFormProps = {
   initialImageUrl?: string | null;
   onSubmit: (data: RecipeImageFormData) => Promise<void>;
   submitLabel: string;
+  onDirtyChange?: (isDirty: boolean) => void;
 };
 
 function isSupportedImageFile(file: File) {
@@ -67,6 +68,7 @@ export default function RecipeForm({
   initialImageUrl = null,
   onSubmit,
   submitLabel,
+  onDirtyChange,
 }: RecipeFormProps) {
   const {
     register,
@@ -76,7 +78,7 @@ export default function RecipeForm({
     setValue,
     setError,
     clearErrors,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<RecipeSchemaInputValues, undefined, RecipeSchemaValues>({
     resolver: zodResolver(recipeSchema),
     defaultValues: {
@@ -103,6 +105,10 @@ export default function RecipeForm({
     register("image");
     register("remove_image");
   }, [register]);
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
 
   useEffect(() => {
     reset({

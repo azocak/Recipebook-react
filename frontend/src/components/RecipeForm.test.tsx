@@ -33,9 +33,11 @@ function setup(
     initialImageUrl: string | null;
     onSubmit: (data: RecipeImageFormData) => Promise<void>;
     submitLabel: string;
+    onDirtyChange: (isDirty: boolean) => void;
   }>,
 ) {
   const onSubmit = overrides?.onSubmit ?? vi.fn().mockResolvedValue(undefined);
+  const onDirtyChange = overrides?.onDirtyChange ?? vi.fn();
 
   render(
     <RecipeForm
@@ -43,10 +45,11 @@ function setup(
       initialImageUrl={overrides?.initialImageUrl ?? null}
       onSubmit={onSubmit}
       submitLabel={overrides?.submitLabel ?? "Mentés"}
+      onDirtyChange={onDirtyChange}
     />,
   );
 
-  return { onSubmit };
+  return { onSubmit, onDirtyChange };
 }
 
 function createImageFile(
@@ -116,6 +119,57 @@ async function submitFormWithInvalidField<K extends keyof RecipeFormData>(
 }
 
 describe("RecipeForm", () => {
+  it("notifies that the form is clean on initial render", async () => {
+    const onDirtyChange = vi.fn();
+
+    setup({ onDirtyChange });
+
+    await waitFor(() => {
+      expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+    });
+  });
+
+  it("notifies when a text field becomes dirty", async () => {
+    const user = userEvent.setup();
+    const onDirtyChange = vi.fn();
+
+    setup({ onDirtyChange });
+
+    await waitFor(() => {
+      expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+    });
+
+    await user.type(
+      screen.getByRole("textbox", { name: /recept neve/i }),
+      " extra",
+    );
+
+    await waitFor(() => {
+      expect(onDirtyChange).toHaveBeenLastCalledWith(true);
+    });
+  });
+
+  it("notifies when the existing image is marked for removal", async () => {
+    const user = userEvent.setup();
+    const onDirtyChange = vi.fn();
+
+    setup({
+      initialImageUrl: "http://localhost:8000/media/recipes/existing.jpg",
+      onDirtyChange,
+    });
+
+    await waitFor(() => {
+      expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+    });
+
+    await user.click(
+      screen.getByRole("button", { name: /jelenlegi kép törlése mentéskor/i }),
+    );
+
+    await waitFor(() => {
+      expect(onDirtyChange).toHaveBeenLastCalledWith(true);
+    });
+  });
   it("displays the file selector field and the editor placeholder block", () => {
     setup({
       initialValues: {
