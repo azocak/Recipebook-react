@@ -278,7 +278,6 @@ describe("RecipeDetailPage", () => {
     expect(dialog).toBeInTheDocument();
     expect(dialog).toHaveTextContent("Biztosan törölni szeretnéd");
     expect(dialog).toHaveTextContent(mockRecipe.title);
-    expect(dialog).toHaveTextContent("Ez a művelet nem vonható vissza.");
   });
   it("does not delete the recipe when the confirmation is cancelled", async () => {
     const user = userEvent.setup();

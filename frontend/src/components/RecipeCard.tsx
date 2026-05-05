@@ -172,7 +172,7 @@ function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
         description={
           <>
             Biztosan törölni szeretnéd a(z) <strong>{recipe.title}</strong>{" "}
-            receptet? Ez a művelet nem vonható vissza.
+            receptet?
           </>
         }
         confirmLabel="Törlés"
