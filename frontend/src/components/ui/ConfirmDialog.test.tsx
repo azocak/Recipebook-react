@@ -41,6 +41,38 @@ describe("ConfirmDialog", () => {
     expect(screen.getByRole("button", { name: "Mégse" })).toHaveFocus();
   });
 
+  it("moves focus from the confirm button back to the cancel button when Tab is pressed", async () => {
+    const user = userEvent.setup();
+
+    render(<ConfirmDialog {...defaultProps} />);
+
+    const cancelButton = screen.getByRole("button", { name: "Mégse" });
+    const confirmButton = screen.getByRole("button", { name: "Törlés" });
+
+    confirmButton.focus();
+
+    expect(confirmButton).toHaveFocus();
+
+    await user.keyboard("{Tab}");
+
+    expect(cancelButton).toHaveFocus();
+  });
+
+  it("moves focus from the cancel button back to the confirm button when Shift+Tab is pressed", async () => {
+    const user = userEvent.setup();
+
+    render(<ConfirmDialog {...defaultProps} />);
+
+    const cancelButton = screen.getByRole("button", { name: "Mégse" });
+    const confirmButton = screen.getByRole("button", { name: "Törlés" });
+
+    expect(cancelButton).toHaveFocus();
+
+    await user.keyboard("{Shift>}{Tab}{/Shift}");
+
+    expect(confirmButton).toHaveFocus();
+  });
+
   it("calls onCancel when the cancel button is clicked", async () => {
     const user = userEvent.setup();
 
