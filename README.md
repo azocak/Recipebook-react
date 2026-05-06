@@ -15,6 +15,7 @@ A projekt célja egy portfóliószintű full-stack alkalmazás felépítése, am
 - űrlapvalidáció
 - automatizált frontend és backend tesztelés
 - coverage alapú minőségellenőrzés
+- fokozatos E2E tesztelési előkészítés Playwrighttal
 
 ## Fő funkciók
 
@@ -46,8 +47,12 @@ A projekt célja egy portfóliószintű full-stack alkalmazás felépítése, am
 - Vite
 - React Router
 - Tailwind CSS 4
+- TanStack Query
+- React Hook Form
+- Zod
 - Vitest
 - Testing Library
+- Playwright
 - ESLint
 
 ### Backend
@@ -98,10 +103,12 @@ Recipebook-react/
 │   ├── manage.py
 │   └── requirements.txt
 ├── frontend/
+│   ├── e2e/
 │   ├── src/
 │   ├── public/
 │   ├── package.json
 │   ├── package-lock.json
+│   ├── playwright.config.ts
 │   └── vite.config.ts
 ├── .gitignore
 └── README.md
@@ -295,7 +302,7 @@ python manage.py test recipes.tests.test_recipe_api -v 2
 
 ### Frontend
 
-Összes frontend teszt:
+Összes frontend unit/integration teszt:
 
 ```bash
 cd frontend
@@ -313,6 +320,91 @@ UI mód:
 ```bash
 npm run test:ui
 ```
+
+### Playwright E2E smoke teszt
+
+A projekt tartalmaz egy kezdeti Playwright setupot egy könnyű frontend smoke teszthez.
+
+A jelenlegi smoke teszt helye:
+
+```text
+frontend/e2e/recipes-smoke.spec.ts
+```
+
+A teszt azt ellenőrzi, hogy a Vite React alkalmazás elindul, és a receptlista oldal legfontosabb felhasználói UI elemei megjelennek:
+
+- receptlista oldal címe
+- keresőmező
+- rendezési select
+- szűrők törlése gomb
+- üres receptlista állapot
+
+Lokális futtatás a `frontend` mappából:
+
+```bash
+npm run test:e2e
+```
+
+Böngészőablakban futtatva:
+
+```bash
+npm run test:e2e:headed
+```
+
+Playwright UI runnerrel:
+
+```bash
+npm run test:e2e:ui
+```
+
+#### Mit mockol a smoke teszt?
+
+Az első Playwright teszt szándékosan backendfüggetlen.
+
+A receptlista oldalhoz szükséges API hívásokat mockolja:
+
+```text
+GET /api/auth/me
+GET /api/recipes/
+```
+
+Így a teszt backend szerver és előkészített adatbázis nélkül is ellenőrzi a frontend routingot, az oldal renderelését, az accessibility locatorokat, a filter kontrollokat és az üres állapotot.
+
+#### Miért nincs még CI gate-be kötve?
+
+A Playwright fokozatosan kerül bevezetésre.
+
+Ebben a fázisban a smoke teszt lokális E2E readiness check, nem kötelező CI quality gate.
+
+A jelenlegi CI már futtatja a fő frontend és backend ellenőrzéseket:
+
+- frontend lint
+- frontend unit/integration tesztek coverage-dzsel
+- frontend build
+- backend lint
+- backend formatting check
+- Django system check
+- Django deployment check
+- backend tesztek coverage-dzsel
+
+A Playwright CI jobot később érdemes hozzáadni, amikor már stabil stratégia van az alábbiakra:
+
+- backend szerver indítása
+- tesztadatok előkészítése
+- authentication/session kezelés
+- tesztadatbázis izolálása
+- flaky timing problémák elkerülése
+- opcionálisan Docker vagy production-like környezet használata
+
+#### Tervezett következő E2E lépések
+
+A javasolt sorrend:
+
+1. a jelenlegi mockolt receptlista smoke teszt stabilan tartása,
+2. kis authentication smoke flow hozzáadása,
+3. recipe CRUD smoke flow hozzáadása,
+4. search, ordering és pagination E2E lefedés hozzáadása,
+5. külön CI E2E job bevezetése csak akkor, amikor a lokális flow-k már stabilak.
 
 ## Coverage futtatása
 
@@ -369,13 +461,19 @@ A CI a következő ellenőrzéseket futtatja megfelelő `push` és `pull_request
 - függőségek telepítése
 - ESLint futtatása
 - Vitest tesztek futtatása coverage riporttal
+- frontend build
 
 ### Backend
 
 - Python függőségek telepítése
+- Ruff futtatása
+- Black formázási ellenőrzés
+- Django system check
+- Django deployment check production-szerű környezeti változókkal
 - Django tesztek futtatása coverage módban
-- coverage riport kiírása
-- XML coverage riport generálása
+- coverage riportok generálása
+
+A Playwright smoke teszt jelenleg nincs kötelező CI gate-be kötve. Első körben lokális E2E readiness checkként használjuk, és csak stabil auth/CRUD/list E2E stratégia után érdemes külön CI jobként bevezetni.
 
 ## Helyi quality check parancsok
 
@@ -386,12 +484,17 @@ cd frontend
 npm run lint
 npm run test:run
 npm run coverage
+npm run build
+npm run test:e2e
 ```
 
 ### Backend
 
 ```bash
 cd backend
+ruff check .
+black . --check
+python manage.py check
 coverage erase
 coverage run --branch manage.py test
 coverage report
@@ -428,13 +531,16 @@ coverage xml
 - képeltávolítás támogatása szerkesztéskor
 - placeholder blokk megjelenítése, ha nincs feltöltött kép
 - image mező backend hibáinak megjelenítése
+- megerősítő dialógus destruktív műveletekhez
+- mentetlen módosításokra figyelmeztetés böngészőfrissítés vagy fülbezárás előtt
 
 ## Jövőbeli fejlesztési ötletek
 
-- keresés és szűrés
 - kategóriák és címkék
-- pagination
 - felhasználói profil oldal
+- teljes auth/CRUD/list Playwright E2E flow-k
+- Playwright CI job stabil E2E adatstratégiával
+- Data Router migráció és SPA-n belüli unsaved changes blocker
 - deployment production környezetbe
 
 ## Fejlesztői megjegyzés
