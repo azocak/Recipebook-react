@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 function isApiPath(url: string, path: string) {
   const parsedUrl = new URL(url);
@@ -15,11 +15,7 @@ function paginatedEmptyRecipesResponse() {
   };
 }
 
-test("shows a validation error when the register password confirmation does not match", async ({
-  page,
-}) => {
-  let registerWasCalled = false;
-
+async function mockGuestSession(page: Page) {
   await page.route(
     (url) => isApiPath(url.toString(), "/api/auth/me"),
     async (route) => {
@@ -30,6 +26,43 @@ test("shows a validation error when the register password confirmation does not 
       });
     },
   );
+}
+
+async function mockCsrfEndpoint(page: Page) {
+  await page.route(
+    (url) => isApiPath(url.toString(), "/api/auth/csrf"),
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: {
+          "Set-Cookie": "csrftoken=e2e-csrf-token; Path=/; SameSite=Lax",
+        },
+        body: JSON.stringify({ detail: "CSRF cookie set." }),
+      });
+    },
+  );
+}
+
+async function mockEmptyRecipeList(page: Page) {
+  await page.route(
+    (url) => isApiPath(url.toString(), "/api/recipes"),
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(paginatedEmptyRecipesResponse()),
+      });
+    },
+  );
+}
+
+test("shows a validation error when the register password confirmation does not match", async ({
+  page,
+}) => {
+  let registerWasCalled = false;
+
+  await mockGuestSession(page);
 
   await page.route(
     (url) => isApiPath(url.toString(), "/api/auth/register"),
@@ -53,8 +86,8 @@ test("shows a validation error when the register password confirmation does not 
     page.getByRole("heading", { name: "Regisztráció" }),
   ).toBeVisible();
 
-  await page.getByLabel("Felhasználónév").fill("e2e_user");
-  await page.getByLabel("Email cím").fill("e2e@example.com");
+  await page.getByLabel(/^Felhasználónév\s*\*?$/i).fill("e2e_user");
+  await page.getByLabel(/^Email cím\s*\*?$/i).fill("e2e@example.com");
   await page.getByLabel(/^Jelszó\s*\*?$/i).fill("titkos123");
   await page.getByLabel(/^Jelszó megerősítése\s*\*?$/i).fill("masik123");
 
@@ -76,30 +109,9 @@ test("registers a new user and redirects to the recipe list", async ({
 
   let registerRequestBody: unknown;
 
-  await page.route(
-    (url) => isApiPath(url.toString(), "/api/auth/me"),
-    async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: "null",
-      });
-    },
-  );
-
-  await page.route(
-    (url) => isApiPath(url.toString(), "/api/auth/csrf"),
-    async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        headers: {
-          "Set-Cookie": "csrftoken=e2e-csrf-token; Path=/; SameSite=Lax",
-        },
-        body: JSON.stringify({ detail: "CSRF cookie set." }),
-      });
-    },
-  );
+  await mockGuestSession(page);
+  await mockCsrfEndpoint(page);
+  await mockEmptyRecipeList(page);
 
   await page.route(
     (url) => isApiPath(url.toString(), "/api/auth/register"),
@@ -114,25 +126,16 @@ test("registers a new user and redirects to the recipe list", async ({
     },
   );
 
-  await page.route(
-    (url) => isApiPath(url.toString(), "/api/recipes"),
-    async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(paginatedEmptyRecipesResponse()),
-      });
-    },
-  );
-
   await page.goto("/register");
 
   await expect(
     page.getByRole("heading", { name: "Regisztráció" }),
   ).toBeVisible();
 
-  await page.getByLabel("Felhasználónév").fill(registeredUser.username);
-  await page.getByLabel("Email cím").fill(registeredUser.email);
+  await page
+    .getByLabel(/^Felhasználónév\s*\*?$/i)
+    .fill(registeredUser.username);
+  await page.getByLabel(/^Email cím\s*\*?$/i).fill(registeredUser.email);
   await page.getByLabel(/^Jelszó\s*\*?$/i).fill("titkos123");
   await page.getByLabel(/^Jelszó megerősítése\s*\*?$/i).fill("titkos123");
 
@@ -153,5 +156,106 @@ test("registers a new user and redirects to the recipe list", async ({
     email: registeredUser.email,
     password: "titkos123",
     confirmation: "titkos123",
+  });
+});
+
+test("logs in an existing user and redirects to the recipe list", async ({
+  page,
+}) => {
+  const loggedInUser = {
+    id: 202,
+    username: "e2e_login_user",
+    email: "e2e-login@example.com",
+  };
+
+  let loginRequestBody: unknown;
+
+  await mockGuestSession(page);
+  await mockCsrfEndpoint(page);
+  await mockEmptyRecipeList(page);
+
+  await page.route(
+    (url) => isApiPath(url.toString(), "/api/auth/login"),
+    async (route) => {
+      loginRequestBody = route.request().postDataJSON();
+
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(loggedInUser),
+      });
+    },
+  );
+
+  await page.goto("/login");
+
+  await expect(
+    page.getByRole("heading", { name: "Bejelentkezés" }),
+  ).toBeVisible();
+
+  await page.getByLabel(/^Felhasználónév\s*\*?$/i).fill(loggedInUser.username);
+  await page.getByLabel(/^Jelszó\s*\*?$/i).fill("titkos123");
+
+  await page.getByRole("button", { name: "Belépés" }).click();
+
+  await expect(page).toHaveURL(/\/recipes$/);
+
+  await expect(
+    page.getByRole("heading", { name: "Receptkönyv" }),
+  ).toBeVisible();
+
+  await expect(
+    page.getByRole("heading", { name: "Még nincs egyetlen recept sem" }),
+  ).toBeVisible();
+
+  expect(loginRequestBody).toEqual({
+    username: loggedInUser.username,
+    password: "titkos123",
+  });
+});
+
+test("shows a backend error when login credentials are invalid", async ({
+  page,
+}) => {
+  let loginRequestBody: unknown;
+
+  await mockGuestSession(page);
+  await mockCsrfEndpoint(page);
+
+  await page.route(
+    (url) => isApiPath(url.toString(), "/api/auth/login"),
+    async (route) => {
+      loginRequestBody = route.request().postDataJSON();
+
+      await route.fulfill({
+        status: 400,
+        contentType: "application/json",
+        body: JSON.stringify({
+          non_field_errors: ["Hibás felhasználónév vagy jelszó."],
+        }),
+      });
+    },
+  );
+
+  await page.goto("/login");
+
+  await expect(
+    page.getByRole("heading", { name: "Bejelentkezés" }),
+  ).toBeVisible();
+
+  await page.getByLabel(/^Felhasználónév\s*\*?$/i).fill("rossz_user");
+  await page.getByLabel(/^Jelszó\s*\*?$/i).fill("rosszjelszo");
+
+  await page.getByRole("button", { name: "Belépés" }).click();
+
+  await expect(
+    page.getByText("Hibás felhasználónév vagy jelszó."),
+  ).toBeVisible();
+
+  await expect(page).toHaveURL(/\/login$/);
+
+  expect(loginRequestBody).toEqual({
+    username: "rossz_user",
+    password: "rosszjelszo",
   });
 });
