@@ -5,7 +5,7 @@ import { RECIPE_ORDERING_OPTIONS } from "../../constants/recipe";
 import { cn } from "../../lib/cn";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
-import { Label } from "../ui/Label";
+import { Select } from "../ui/Select";
 
 type RecipeFilterBarProps = {
   search: string;
@@ -56,15 +56,11 @@ export function RecipeFilterBar({
         />
 
         <div className="space-y-2">
-          <Label htmlFor={orderingSelectId}>Rendezés</Label>
-
-          <select
+          <Select
             id={orderingSelectId}
+            label="Rendezés"
             value={ordering}
             onChange={handleOrderingChange}
-            className={cn(
-              "block min-h-12 w-full rounded-2xl border border-(--color-border-strong) bg-(--color-surface) px-4 py-3 text-sm font-medium text-(--color-text-secondary) transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-primary) focus-visible:ring-offset-2",
-            )}
           >
             <option value="">Alapértelmezett</option>
 
@@ -73,7 +69,7 @@ export function RecipeFilterBar({
                 {option.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <Button
