@@ -210,10 +210,6 @@ describe("RecipesPage", () => {
 
     expect(screen.getByText("Palacsinta")).toBeInTheDocument();
     expect(screen.getByText("Gulyásleves")).toBeInTheDocument();
-
-    expect(
-      screen.getByRole("link", { name: "Bejelentkezés a megosztáshoz" }),
-    ).toHaveAttribute("href", "/login");
   });
 
   it("shows a no-results empty state when filters return no recipes", async () => {
@@ -375,25 +371,6 @@ describe("RecipesPage", () => {
 
     expect(screen.getByLabelText("Keresés")).toHaveValue("");
     expect(screen.getByLabelText("Rendezés")).toHaveValue("");
-  });
-  it("shows the create button for authenticated users and navigates on click", async () => {
-    const user = userEvent.setup();
-
-    await renderPageWithRecipes({
-      recipes: mockRecipes,
-      isAuthenticated: true,
-    });
-
-    const createButton = await screen.findByRole("button", {
-      name: "Új recept létrehozása",
-    });
-
-    expect(createButton).toBeInTheDocument();
-    expectStatusBadge(true);
-
-    await user.click(createButton);
-
-    expect(mockNavigate).toHaveBeenCalledWith("/recipes/new");
   });
 
   it("retries fetching recipes after an error", async () => {

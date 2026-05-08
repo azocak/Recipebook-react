@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import type {
   PaginatedResponse,
@@ -321,24 +321,6 @@ function RecipesPage() {
                 value={isAuthenticated ? "Bejelentkezve" : "Vendég mód"}
               />
             </>
-          }
-          actions={
-            isAuthenticated ? (
-              <button
-                type="button"
-                onClick={handleCreateClick}
-                className="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-              >
-                Új recept létrehozása
-              </button>
-            ) : (
-              <Link
-                to="/login"
-                className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
-              >
-                Bejelentkezés a megosztáshoz
-              </Link>
-            )
           }
         />
 
