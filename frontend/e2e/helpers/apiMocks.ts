@@ -28,13 +28,18 @@ export function isRecipeDetailApiPath(url: string, recipeId: number) {
   );
 }
 
+type PaginatedResponseOverrides<T> = Partial<
+  Pick<PaginatedResponse<T>, "count" | "next" | "previous">
+>;
+
 export function paginatedRecipeListResponse<T>(
   results: T[] = [],
+  overrides: PaginatedResponseOverrides<T> = {},
 ): PaginatedResponse<T> {
   return {
-    count: results.length,
-    next: null,
-    previous: null,
+    count: overrides.count ?? results.length,
+    next: overrides.next ?? null,
+    previous: overrides.previous ?? null,
     results,
   };
 }
