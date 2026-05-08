@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { Button } from "./ui/Button";
 
 type PageStatusVariant = "default" | "error" | "success";
 
@@ -42,23 +43,27 @@ export function PageStatus({
         {(onAction || backTo) && (
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             {onAction && actionLabel ? (
-              <button
+              <Button
                 type="button"
+                variant="primary"
+                size="sm"
                 onClick={onAction}
-                className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
+                className="rounded-xl font-medium cursor-pointer"
               >
                 {actionLabel}
-              </button>
+              </Button>
             ) : null}
 
             {backTo ? (
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => navigate(backTo)}
-                className="rounded-xl bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-300"
+                className="rounded-xl font-medium cursor-pointer"
               >
                 {backLabel ?? "Vissza"}
-              </button>
+              </Button>
             ) : null}
           </div>
         )}
