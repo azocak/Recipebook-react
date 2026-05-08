@@ -47,6 +47,10 @@ dist/
 build/
 coverage/
 
+# Playwright
+frontend/playwright-report/
+frontend/test-results/
+
 # Vite
 vite.svg
 

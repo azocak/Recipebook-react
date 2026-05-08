@@ -137,9 +137,6 @@ test("shows the no-results state and resets filters after an empty search result
   await expect(page).toHaveURL(/\/recipes$/);
   await expect(searchInput).toHaveValue("");
 
-  await expect(page).toHaveURL(/\/recipes$/);
-  await expect(searchInput).toHaveValue("");
-
   await expect.poll(() => observedSearchParams.includes("")).toBe(true);
 
   await expect(page.getByText(initialRecipe.title)).toBeVisible();
