@@ -1,38 +1,10 @@
 import { expect, test } from "@playwright/test";
 
-function isApiPath(url: string, path: string) {
-  const parsedUrl = new URL(url);
-
-  return parsedUrl.pathname === path || parsedUrl.pathname === `${path}/`;
-}
+import { mockEmptyRecipeList, mockGuestSession } from "./helpers/apiMocks";
 
 test("renders the recipe list page with mocked API data", async ({ page }) => {
-  await page.route(
-    (url) => isApiPath(url.toString(), "/api/auth/me"),
-    async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: "null",
-      });
-    },
-  );
-
-  await page.route(
-    (url) => isApiPath(url.toString(), "/api/recipes"),
-    async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          count: 0,
-          next: null,
-          previous: null,
-          results: [],
-        }),
-      });
-    },
-  );
+  await mockGuestSession(page);
+  await mockEmptyRecipeList(page);
 
   await page.goto("/recipes");
 

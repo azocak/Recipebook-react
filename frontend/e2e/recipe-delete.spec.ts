@@ -1,83 +1,19 @@
-import { expect, test, type Page } from "@playwright/test";
-
-function isApiPath(url: string, path: string) {
-  const parsedUrl = new URL(url);
-
-  return parsedUrl.pathname === path || parsedUrl.pathname === `${path}/`;
-}
-
-function isRecipeDetailApiPath(url: string, recipeId: number) {
-  const parsedUrl = new URL(url);
-
-  return (
-    parsedUrl.pathname === `/api/recipes/${recipeId}` ||
-    parsedUrl.pathname === `/api/recipes/${recipeId}/`
-  );
-}
-
-function paginatedEmptyRecipesResponse() {
-  return {
-    count: 0,
-    next: null,
-    previous: null,
-    results: [],
-  };
-}
-
-async function mockAuthenticatedUser(page: Page) {
-  const user = {
-    id: 701,
-    username: "e2e_delete_owner",
-    email: "e2e-delete-owner@example.com",
-  };
-
-  await page.route(
-    (url) => isApiPath(url.toString(), "/api/auth/me"),
-    async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(user),
-      });
-    },
-  );
-
-  return user;
-}
-
-async function mockCsrfEndpoint(page: Page) {
-  await page.route(
-    (url) => isApiPath(url.toString(), "/api/auth/csrf"),
-    async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        headers: {
-          "Set-Cookie": "csrftoken=e2e-csrf-token; Path=/; SameSite=Lax",
-        },
-        body: JSON.stringify({ detail: "CSRF cookie set." }),
-      });
-    },
-  );
-}
-
-async function mockEmptyRecipeList(page: Page) {
-  await page.route(
-    (url) => isApiPath(url.toString(), "/api/recipes"),
-    async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(paginatedEmptyRecipesResponse()),
-      });
-    },
-  );
-}
+import { expect, test } from "@playwright/test";
+import {
+  isRecipeDetailApiPath,
+  mockAuthenticatedUser,
+  mockCsrfEndpoint,
+  mockEmptyRecipeList,
+} from "./helpers/apiMocks";
 
 test("deletes an existing recipe from the detail page and redirects to the recipe list", async ({
   page,
 }) => {
-  const user = await mockAuthenticatedUser(page);
+  const user = await mockAuthenticatedUser(page, {
+    id: 701,
+    username: "e2e_delete_owner",
+    email: "e2e-delete-owner@example.com",
+  });
   await mockCsrfEndpoint(page);
   await mockEmptyRecipeList(page);
 

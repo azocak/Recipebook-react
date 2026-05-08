@@ -1,61 +1,10 @@
-import { expect, test, type Page } from "@playwright/test";
-
-function isApiPath(url: string, path: string) {
-  const parsedUrl = new URL(url);
-
-  return parsedUrl.pathname === path || parsedUrl.pathname === `${path}/`;
-}
-
-function paginatedEmptyRecipesResponse() {
-  return {
-    count: 0,
-    next: null,
-    previous: null,
-    results: [],
-  };
-}
-
-async function mockGuestSession(page: Page) {
-  await page.route(
-    (url) => isApiPath(url.toString(), "/api/auth/me"),
-    async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: "null",
-      });
-    },
-  );
-}
-
-async function mockCsrfEndpoint(page: Page) {
-  await page.route(
-    (url) => isApiPath(url.toString(), "/api/auth/csrf"),
-    async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        headers: {
-          "Set-Cookie": "csrftoken=e2e-csrf-token; Path=/; SameSite=Lax",
-        },
-        body: JSON.stringify({ detail: "CSRF cookie set." }),
-      });
-    },
-  );
-}
-
-async function mockEmptyRecipeList(page: Page) {
-  await page.route(
-    (url) => isApiPath(url.toString(), "/api/recipes"),
-    async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(paginatedEmptyRecipesResponse()),
-      });
-    },
-  );
-}
+import { expect, test } from "@playwright/test";
+import {
+  isApiPath,
+  mockCsrfEndpoint,
+  mockEmptyRecipeList,
+  mockGuestSession,
+} from "./helpers/apiMocks";
 
 test("shows a validation error when the register password confirmation does not match", async ({
   page,

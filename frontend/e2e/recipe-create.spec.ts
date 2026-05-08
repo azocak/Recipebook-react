@@ -1,61 +1,19 @@
-import { expect, test, type Page } from "@playwright/test";
-
-function isApiPath(url: string, path: string) {
-  const parsedUrl = new URL(url);
-
-  return parsedUrl.pathname === path || parsedUrl.pathname === `${path}/`;
-}
-
-function isRecipeDetailApiPath(url: string, recipeId: number) {
-  const parsedUrl = new URL(url);
-
-  return (
-    parsedUrl.pathname === `/api/recipes/${recipeId}` ||
-    parsedUrl.pathname === `/api/recipes/${recipeId}/`
-  );
-}
-
-async function mockAuthenticatedUser(page: Page) {
-  const user = {
-    id: 301,
-    username: "e2e_recipe_user",
-    email: "e2e-recipe@example.com",
-  };
-
-  await page.route(
-    (url) => isApiPath(url.toString(), "/api/auth/me"),
-    async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(user),
-      });
-    },
-  );
-
-  return user;
-}
-
-async function mockCsrfEndpoint(page: Page) {
-  await page.route(
-    (url) => isApiPath(url.toString(), "/api/auth/csrf"),
-    async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        headers: {
-          "Set-Cookie": "csrftoken=e2e-csrf-token; Path=/; SameSite=Lax",
-        },
-        body: JSON.stringify({ detail: "CSRF cookie set." }),
-      });
-    },
-  );
-}
+import { expect, test } from "@playwright/test";
+import {
+  isApiPath,
+  isRecipeDetailApiPath,
+  mockAuthenticatedUser,
+  mockCsrfEndpoint,
+} from "./helpers/apiMocks";
 
 test("creates a recipe and redirects to the created recipe detail page", async ({
   page,
 }) => {
-  const user = await mockAuthenticatedUser(page);
+  const user = await mockAuthenticatedUser(page, {
+    id: 301,
+    username: "e2e_recipe_user",
+    email: "e2e-recipe@example.com",
+  });
   await mockCsrfEndpoint(page);
 
   const createdRecipe = {
