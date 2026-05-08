@@ -61,6 +61,43 @@ describe("PageHeader", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders meta and action content together", () => {
+    render(
+      <PageHeader
+        eyebrow="Publikus receptgyűjtemény"
+        title="Receptkönyv"
+        description="Böngészd és kezeld a receptjeidet egy helyen."
+        meta={
+          <>
+            <div>Elérhető receptek: 12 db</div>
+            <div>Hozzáférés: Bejelentkezve</div>
+          </>
+        }
+        actions={
+          <>
+            <button type="button">Új recept létrehozása</button>
+            <button type="button">Szűrők törlése</button>
+          </>
+        }
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Receptkönyv", level: 1 }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText("Elérhető receptek: 12 db")).toBeInTheDocument();
+    expect(screen.getByText("Hozzáférés: Bejelentkezve")).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: "Új recept létrehozása" }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: "Szűrők törlése" }),
+    ).toBeInTheDocument();
+  });
+
   it("accepts a custom className", () => {
     const { container } = render(
       <PageHeader title="Receptkönyv" className="mt-8" />,

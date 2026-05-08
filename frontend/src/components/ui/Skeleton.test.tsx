@@ -26,4 +26,10 @@ describe("Skeleton", () => {
 
     expect(screen.getByTitle("Betöltési helykitöltő")).toBeInTheDocument();
   });
+
+  it("does not expose a loading status role", () => {
+    render(<Skeleton data-testid="skeleton" />);
+
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
 });

@@ -1,5 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { ApiError } from "../api/errors";
@@ -72,7 +72,6 @@ describe("RecipeDetailPage", () => {
 
     setGuestAuth(mockUseAuth);
     mockRemoveRecipe.mockResolvedValue(undefined);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
 
     mockGetById.mockResolvedValue(createRecipe());
   });
@@ -265,20 +264,39 @@ describe("RecipeDetailPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("does not delete the recipe when the confirmation is cancelled", async () => {
+  it("opens the delete confirmation dialog when the owner clicks delete", async () => {
     const user = userEvent.setup();
 
     setAuthenticatedUser(mockUseAuth);
-    vi.spyOn(window, "confirm").mockReturnValue(false);
 
     renderRecipeDetailPage();
 
     await user.click(await screen.findByRole("button", { name: "Törlés" }));
 
-    expect(window.confirm).toHaveBeenCalledWith(
-      "Biztosan törölni szeretnéd ezt a receptet?",
-    );
+    const dialog = screen.getByRole("dialog", { name: "Recept törlése" });
 
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveTextContent("Biztosan törölni szeretnéd");
+    expect(dialog).toHaveTextContent(mockRecipe.title);
+  });
+  it("does not delete the recipe when the confirmation is cancelled", async () => {
+    const user = userEvent.setup();
+
+    setAuthenticatedUser(mockUseAuth);
+
+    renderRecipeDetailPage();
+
+    await user.click(await screen.findByRole("button", { name: "Törlés" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Recept törlése" });
+
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveTextContent("Biztosan törölni szeretnéd");
+    expect(dialog).toHaveTextContent(mockRecipe.title);
+
+    await user.click(within(dialog).getByRole("button", { name: "Mégse" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(mockRemoveRecipe).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
   });
@@ -291,6 +309,10 @@ describe("RecipeDetailPage", () => {
     renderRecipeDetailPage();
 
     await user.click(await screen.findByRole("button", { name: "Törlés" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Recept törlése" });
+
+    await user.click(within(dialog).getByRole("button", { name: "Törlés" }));
 
     await waitFor(() => {
       expect(mockRemoveRecipe).toHaveBeenCalledWith(1);
@@ -313,6 +335,10 @@ describe("RecipeDetailPage", () => {
     renderRecipeDetailPage();
 
     await user.click(await screen.findByRole("button", { name: "Törlés" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Recept törlése" });
+
+    await user.click(within(dialog).getByRole("button", { name: "Törlés" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Nem sikerült törölni a receptet.",

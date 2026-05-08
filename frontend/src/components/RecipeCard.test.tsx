@@ -114,8 +114,6 @@ describe("RecipeCard", () => {
 
     setAuthGuest();
     mockRemoveRecipe.mockResolvedValue(undefined);
-
-    vi.spyOn(window, "confirm").mockReturnValue(true);
   });
 
   it("renders the recipe title, owner, metadata and detail links", () => {
@@ -213,21 +211,34 @@ describe("RecipeCard", () => {
     expect(mockNavigate).toHaveBeenCalledWith("/recipes/1/edit");
   });
 
+  it("opens the delete confirmation dialog when the owner clicks the delete button", async () => {
+    const user = userEvent.setup();
+
+    setAuthUser(ownerUser);
+
+    renderRecipeCard();
+
+    await user.click(getDeleteButtonOrThrow());
+
+    const dialog = screen.getByRole("dialog", { name: "Recept törlése" });
+
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveTextContent("Biztosan törölni szeretnéd");
+    expect(dialog).toHaveTextContent(mockRecipe.title);
+  });
+
   it("does not delete the recipe when confirmation is cancelled", async () => {
     const user = userEvent.setup();
     const onDeleteSuccess = vi.fn();
-
-    vi.spyOn(window, "confirm").mockReturnValue(false);
 
     setAuthUser(ownerUser);
 
     renderRecipeCard(createRecipe(), { onDeleteSuccess });
 
     await user.click(getDeleteButtonOrThrow());
+    await user.click(screen.getByRole("button", { name: "Mégse" }));
 
-    expect(window.confirm).toHaveBeenLastCalledWith(
-      "Biztosan törölni szeretnéd ezt a receptet?",
-    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(mockRemoveRecipe).not.toHaveBeenCalled();
     expect(onDeleteSuccess).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
@@ -242,11 +253,11 @@ describe("RecipeCard", () => {
     renderRecipeCard(createRecipe(), { onDeleteSuccess });
 
     await user.click(getDeleteButtonOrThrow());
+    await user.click(screen.getByRole("button", { name: "Törlés" }));
 
     await waitFor(() => {
       expect(mockRemoveRecipe).toHaveBeenCalledWith(1);
     });
-
     expect(onDeleteSuccess).toHaveBeenCalledWith(1);
     expect(mockNavigate).not.toHaveBeenCalledWith("/recipes");
   });
@@ -262,11 +273,11 @@ describe("RecipeCard", () => {
     renderRecipeCard(createRecipe(), { queryClient });
 
     await user.click(getDeleteButtonOrThrow());
+    await user.click(screen.getByRole("button", { name: "Törlés" }));
 
     await waitFor(() => {
       expect(mockRemoveRecipe).toHaveBeenCalledWith(1);
     });
-
     expect(
       queryClient.getQueryData(queryKeys.recipes.detail(1)),
     ).toBeUndefined();
@@ -280,11 +291,11 @@ describe("RecipeCard", () => {
     renderRecipeCard();
 
     await user.click(getDeleteButtonOrThrow());
+    await user.click(screen.getByRole("button", { name: "Törlés" }));
 
     await waitFor(() => {
       expect(mockRemoveRecipe).toHaveBeenCalledWith(1);
     });
-
     expect(mockNavigate).toHaveBeenCalledWith("/recipes");
   });
 
@@ -302,6 +313,7 @@ describe("RecipeCard", () => {
     renderRecipeCard();
 
     await user.click(getDeleteButtonOrThrow());
+    await user.click(screen.getByRole("button", { name: "Törlés" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Nem sikerült törölni a receptet.",
@@ -318,6 +330,7 @@ describe("RecipeCard", () => {
     renderRecipeCard();
 
     await user.click(getDeleteButtonOrThrow());
+    await user.click(screen.getByRole("button", { name: "Törlés" }));
 
     expect(await screen.findByText("Törlés...")).toBeInTheDocument();
     expect(getEditButtonOrThrow()).toBeDisabled();

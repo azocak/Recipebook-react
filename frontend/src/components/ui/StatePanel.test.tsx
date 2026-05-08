@@ -114,6 +114,56 @@ describe("StatePanel", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
+  it("renders the secondary action when the primary action pair is incomplete", () => {
+    const onSecondaryAction = vi.fn();
+
+    render(
+      <StatePanel
+        tone="empty"
+        role="status"
+        title="Nincs találat"
+        eyebrow="Üres állapot"
+        visual="✨"
+        actionLabel="Hiányzó primary callback"
+        secondaryActionLabel="Szűrők törlése"
+        onSecondaryAction={onSecondaryAction}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "Hiányzó primary callback" }),
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.getByRole("button", { name: "Szűrők törlése" }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders the primary action when the secondary action pair is incomplete", () => {
+    const onAction = vi.fn();
+
+    render(
+      <StatePanel
+        tone="empty"
+        role="status"
+        title="Üres lista"
+        eyebrow="Üres állapot"
+        visual="✨"
+        actionLabel="Új recept létrehozása"
+        onAction={onAction}
+        secondaryActionLabel="Hiányzó secondary callback"
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Új recept létrehozása" }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole("button", { name: "Hiányzó secondary callback" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("uses alert role when configured as an error state", () => {
     render(
       <StatePanel

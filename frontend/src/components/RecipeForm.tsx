@@ -31,6 +31,7 @@ type RecipeFormProps = {
   initialImageUrl?: string | null;
   onSubmit: (data: RecipeImageFormData) => Promise<void>;
   submitLabel: string;
+  onDirtyChange?: (isDirty: boolean) => void;
 };
 
 function isSupportedImageFile(file: File) {
@@ -67,6 +68,7 @@ export default function RecipeForm({
   initialImageUrl = null,
   onSubmit,
   submitLabel,
+  onDirtyChange,
 }: RecipeFormProps) {
   const {
     register,
@@ -76,7 +78,7 @@ export default function RecipeForm({
     setValue,
     setError,
     clearErrors,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<RecipeSchemaInputValues, undefined, RecipeSchemaValues>({
     resolver: zodResolver(recipeSchema),
     defaultValues: {
@@ -86,6 +88,45 @@ export default function RecipeForm({
     },
     mode: "onSubmit",
   });
+
+  const {
+    title: initialTitle,
+    ingredients: initialIngredients,
+    instructions: initialInstructions,
+    cooking_time: initialCookingTime,
+    servings: initialServings,
+  } = initialValues;
+
+  useEffect(() => {
+    register("image");
+    register("remove_image");
+  }, [register]);
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
+  useEffect(() => {
+    reset({
+      ...getRecipeFormInitialState({
+        title: initialTitle,
+        ingredients: initialIngredients,
+        instructions: initialInstructions,
+        cooking_time: initialCookingTime,
+        servings: initialServings,
+      }),
+      image: undefined,
+      remove_image: false,
+    });
+  }, [
+    initialTitle,
+    initialIngredients,
+    initialInstructions,
+    initialCookingTime,
+    initialServings,
+    initialImageUrl,
+    reset,
+  ]);
 
   const selectedImage =
     useWatch({
@@ -98,19 +139,6 @@ export default function RecipeForm({
       control,
       name: "remove_image",
     }) ?? false;
-
-  useEffect(() => {
-    register("image");
-    register("remove_image");
-  }, [register]);
-
-  useEffect(() => {
-    reset({
-      ...getRecipeFormInitialState(initialValues),
-      image: undefined,
-      remove_image: false,
-    });
-  }, [initialValues, initialImageUrl, reset]);
 
   const previewUrl = useMemo(() => {
     if (!selectedImage) {

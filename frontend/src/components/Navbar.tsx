@@ -7,6 +7,7 @@ import {
 import { useAuth } from "../auth/AuthContext.tsx";
 import { useMemo, useState } from "react";
 import { getApiErrorMessage } from "../utils/getApiErrorMessage.ts";
+import { Button } from "./ui/Button.tsx";
 
 function getNavLinkClassname({ isActive }: NavLinkRenderProps) {
   return [
@@ -79,7 +80,7 @@ export function Navbar() {
             </NavLink>
           </div>
 
-          <div className="flex flex-col gap-3 md:items-end">
+          <div className="flex gap-3 md:items-end">
             <nav
               className="flex flex-wrap items-center gap-2"
               aria-label="Fő navigáció"
@@ -101,14 +102,16 @@ export function Navbar() {
                   <span className="rounded-full border border-orange-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm">
                     {welcomeLabel}
                   </span>
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
+                    size="sm"
+                    isLoading={isLoggingOut}
                     onClick={() => void handleLogout()}
-                    disabled={isLoggingOut}
-                    className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm  font-medium text-slate-800 shadow-sm transition hover:border-slate-400  hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+                    className="rounded-full font-medium shadow-sm cursor-pointer"
                   >
                     {isLoggingOut ? "Kijelentkezés..." : "Kijelentkezés"}
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <div className="flex flex-wrap items-center gap-2 md:justify-end">

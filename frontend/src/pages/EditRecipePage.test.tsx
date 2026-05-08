@@ -5,16 +5,17 @@ import userEvent from "@testing-library/user-event";
 import { ApiError } from "../api/errors";
 import { recipesApi } from "../api/recipes";
 import type { Recipe, RecipeFormData, RecipeImageFormData } from "../api/types";
+import { queryKeys } from "../lib/queryKeys";
 import { setAuthenticatedUser } from "../test/auth-fixtures";
 import { mockRecipe } from "../test/recipe-fixtures";
 import { createTestQueryClient } from "../test/queryClient";
 import { renderRoute } from "../test/router";
 import EditRecipePage from "./EditRecipePage";
-import { queryKeys } from "../lib/queryKeys";
 
 const mockNavigate = vi.fn();
 const mockUseAuth = vi.fn();
 const mockRecipeFormProps = vi.fn();
+const mockUseBeforeUnloadWarning = vi.fn();
 
 vi.mock("react-router-dom", async () => {
   const actual =
@@ -39,19 +40,31 @@ vi.mock("../api/recipes", () => ({
   },
 }));
 
+vi.mock("../hooks/useBeforeUnloadWarning", () => ({
+  useBeforeUnloadWarning: (shouldWarn: boolean) =>
+    mockUseBeforeUnloadWarning(shouldWarn),
+}));
+
 vi.mock("../components/RecipeForm", () => ({
   default: ({
     initialValues,
     initialImageUrl,
     onSubmit,
     submitLabel,
+    onDirtyChange,
   }: {
     initialValues: RecipeFormData;
     initialImageUrl?: string | null;
     onSubmit: (data: RecipeImageFormData) => Promise<void>;
     submitLabel: string;
+    onDirtyChange?: (isDirty: boolean) => void;
   }) => {
-    mockRecipeFormProps({ initialValues, initialImageUrl, submitLabel });
+    mockRecipeFormProps({
+      initialValues,
+      initialImageUrl,
+      submitLabel,
+      onDirtyChange,
+    });
 
     return (
       <div>
@@ -72,6 +85,14 @@ vi.mock("../components/RecipeForm", () => ({
 
         <button type="button" onClick={() => void onSubmit(initialValues)}>
           {submitLabel}
+        </button>
+
+        <button type="button" onClick={() => onDirtyChange?.(true)}>
+          Mark form dirty
+        </button>
+
+        <button type="button" onClick={() => onDirtyChange?.(false)}>
+          Mark form clean
         </button>
       </div>
     );
@@ -270,6 +291,7 @@ describe("EditRecipePage", () => {
       },
       initialImageUrl: mockRecipe.image_url,
       submitLabel: "Módosítás mentése",
+      onDirtyChange: expect.any(Function),
     });
 
     expect(screen.getByTestId("initial-title")).toHaveTextContent(
@@ -303,9 +325,54 @@ describe("EditRecipePage", () => {
       },
       initialImageUrl: null,
       submitLabel: "Módosítás mentése",
+      onDirtyChange: expect.any(Function),
     });
 
     expect(screen.getByTestId("initial-image-url")).toHaveTextContent("");
+  });
+
+  it("keeps the beforeunload warning disabled after loading the initial recipe values", async () => {
+    renderEditRecipePage();
+
+    expect(await screen.findByText("RecipeForm mock")).toBeInTheDocument();
+
+    expect(mockUseBeforeUnloadWarning).toHaveBeenLastCalledWith(false);
+  });
+
+  it("enables the beforeunload warning when the edit form becomes dirty", async () => {
+    const user = userEvent.setup();
+
+    renderEditRecipePage();
+
+    expect(await screen.findByText("RecipeForm mock")).toBeInTheDocument();
+
+    expect(mockUseBeforeUnloadWarning).toHaveBeenLastCalledWith(false);
+
+    await user.click(screen.getByRole("button", { name: "Mark form dirty" }));
+
+    await waitFor(() => {
+      expect(mockUseBeforeUnloadWarning).toHaveBeenLastCalledWith(true);
+    });
+  });
+
+  it("disables the beforeunload warning when the edit form becomes clean again", async () => {
+    const user = userEvent.setup();
+
+    renderEditRecipePage();
+
+    expect(await screen.findByText("RecipeForm mock")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Mark form dirty" }));
+
+    await waitFor(() => {
+      expect(mockUseBeforeUnloadWarning).toHaveBeenLastCalledWith(true);
+    });
+
+    await user.click(screen.getByRole("button", { name: "Mark form clean" }));
+
+    await waitFor(() => {
+      expect(mockUseBeforeUnloadWarning).toHaveBeenLastCalledWith(false);
+    });
   });
 
   it("submits the updated recipe, updates the detail cache and navigates to the returned recipe detail page", async () => {

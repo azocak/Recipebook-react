@@ -1,4 +1,4 @@
-import type { MouseEvent } from "react";
+import { useState, type MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import type { Recipe } from "../api/types";
@@ -6,6 +6,9 @@ import { useAuth } from "../auth/AuthContext";
 import { useDeleteRecipeMutation } from "../hooks/mutations/useDeleteRecipeMutation";
 import { getApiErrorMessage } from "../utils/getApiErrorMessage";
 import { RecipeImageBlock } from "./recipe/RecipeImageBlock";
+import { ConfirmDialog } from "./ui/ConfirmDialog";
+import { Button } from "./ui/Button";
+import { Card } from "./ui/Card";
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -16,6 +19,7 @@ function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const deleteRecipeMutation = useDeleteRecipeMutation();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const isOwner = !!user && recipe.owner === user.id;
   const deleting = deleteRecipeMutation.isPending;
@@ -32,21 +36,26 @@ function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
     navigate(`/recipes/${recipe.id}/edit`);
   };
 
-  async function handleDeleteButton(e: MouseEvent<HTMLButtonElement>) {
+  function handleDeleteButton(e: MouseEvent<HTMLButtonElement>) {
     e.stopPropagation();
+    setIsDeleteDialogOpen(true);
+  }
 
-    const confirmed = window.confirm(
-      "Biztosan törölni szeretnéd ezt a receptet?",
-    );
-
-    if (!confirmed) {
+  function handleCancelDelete() {
+    if (deleting) {
       return;
     }
 
+    setIsDeleteDialogOpen(false);
+  }
+
+  async function handleConfirmDelete() {
     try {
       await deleteRecipeMutation.mutateAsync({
         recipeId: recipe.id,
       });
+
+      setIsDeleteDialogOpen(false);
 
       if (onDeleteSuccess) {
         onDeleteSuccess(recipe.id);
@@ -54,12 +63,16 @@ function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
         navigate("/recipes");
       }
     } catch {
+      setIsDeleteDialogOpen(false);
       // A hibát a mutation állapota kezeli, és deleteError alapján jelenítjük meg.
     }
   }
 
   return (
-    <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-md">
+    <Card
+      as="article"
+      className="overflow-hidden transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-md"
+    >
       <Link
         to={`/recipes/${recipe.id}`}
         className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
@@ -88,25 +101,29 @@ function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
 
           {isOwner ? (
             <div className="flex shrink-0 items-center gap-2">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={handleEditButton}
                 disabled={deleting}
-                className="rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-70"
+                className="rounded-full text-xs cursor-pointer"
                 aria-label={`A(z) ${recipe.title} recept szerkesztése`}
               >
                 Szerkesztés
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
+                variant="danger"
+                size="sm"
+                isLoading={deleting}
                 onClick={handleDeleteButton}
-                disabled={deleting}
-                className="rounded-full border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
+                className="rounded-full text-xs cursor-pointer"
                 aria-label={`A(z) ${recipe.title} recept törlése`}
               >
                 {deleting ? "Törlés..." : "Törlés"}
-              </button>
+              </Button>
             </div>
           ) : null}
         </div>
@@ -157,7 +174,24 @@ function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
           </div>
         </Link>
       </div>
-    </article>
+
+      <ConfirmDialog
+        open={isDeleteDialogOpen}
+        title="Recept törlése"
+        description={
+          <>
+            Biztosan törölni szeretnéd a(z) <strong>{recipe.title}</strong>{" "}
+            receptet?
+          </>
+        }
+        confirmLabel="Törlés"
+        cancelLabel="Mégse"
+        intent="danger"
+        isLoading={deleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
+    </Card>
   );
 }
 

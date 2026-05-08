@@ -22,7 +22,7 @@ export function PaginationControls({
     <nav
       aria-label="Receptlista lapozás"
       className={cn(
-        "w-96 m-auto flex flex-col gap-4 rounded-3xl border border-(--color-border) bg-(--color-surface) p-5 shadow-sm sm:flex-row sm:items-center sm:justify-center",
+        "mx-auto w-full max-w-md flex flex-col gap-4 rounded-3xl border border-(--color-border) bg-(--color-surface) p-5 shadow-sm sm:flex-row sm:items-center sm:justify-center",
         className,
       )}
     >
