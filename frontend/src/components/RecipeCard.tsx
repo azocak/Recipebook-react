@@ -7,6 +7,7 @@ import { useDeleteRecipeMutation } from "../hooks/mutations/useDeleteRecipeMutat
 import { getApiErrorMessage } from "../utils/getApiErrorMessage";
 import { RecipeImageBlock } from "./recipe/RecipeImageBlock";
 import { ConfirmDialog } from "./ui/ConfirmDialog";
+import { Button } from "./ui/Button";
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -96,25 +97,29 @@ function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
 
           {isOwner ? (
             <div className="flex shrink-0 items-center gap-2">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={handleEditButton}
                 disabled={deleting}
-                className="rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-70"
+                className="rounded-full text-xs cursor-pointer"
                 aria-label={`A(z) ${recipe.title} recept szerkesztése`}
               >
                 Szerkesztés
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
+                variant="danger"
+                size="sm"
+                isLoading={deleting}
                 onClick={handleDeleteButton}
-                disabled={deleting}
-                className="rounded-full border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
+                className="rounded-full text-xs cursor-pointer"
                 aria-label={`A(z) ${recipe.title} recept törlése`}
               >
                 {deleting ? "Törlés..." : "Törlés"}
-              </button>
+              </Button>
             </div>
           ) : null}
         </div>

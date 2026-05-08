@@ -12,6 +12,7 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { RecipeMeta } from "../components/recipe/RecipeMeta";
 import { useState } from "react";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { Button } from "../components/ui/Button";
 
 function formatDateTime(value: string) {
   return new Date(value).toLocaleString("hu-HU", {
@@ -186,23 +187,27 @@ export default function RecipeDetailPage() {
             actions={
               isOwner ? (
                 <>
-                  <button
+                  <Button
                     type="button"
+                    variant="primary"
+                    size="lg"
                     onClick={() => navigate(`/recipes/${recipe.id}/edit`)}
                     disabled={deleting}
-                    className="inline-flex cursor-pointer items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+                    className="cursor-pointer"
                   >
                     Szerkesztés
-                  </button>
+                  </Button>
 
-                  <button
+                  <Button
                     type="button"
+                    variant="danger"
+                    size="lg"
+                    isLoading={deleting}
                     onClick={handleOpenDeleteDialog}
-                    disabled={deleting}
-                    className="inline-flex cursor-pointer items-center justify-center rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold text-red-700 transition hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
+                    className="cursor-pointer"
                   >
                     {deleting ? "Törlés..." : "Törlés"}
-                  </button>
+                  </Button>
                 </>
               ) : null
             }
