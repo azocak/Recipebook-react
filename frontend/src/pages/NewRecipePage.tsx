@@ -7,6 +7,7 @@ import { RecipeMeta } from "../components/recipe/RecipeMeta";
 import { PageHeader } from "../components/ui/PageHeader";
 import { useCreateRecipeMutation } from "../hooks/mutations/useCreateRecipeMutation";
 import { useBeforeUnloadWarning } from "../hooks/useBeforeUnloadWarning";
+import { Card } from "../components/ui/Card";
 
 const defaultValues: RecipeFormData = {
   title: "",
@@ -40,7 +41,7 @@ export default function NewRecipePage() {
           Vissza a receptekhez
         </Link>
 
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <Card className="overflow-hidden">
           <PageHeader
             className="rounded-none border-x-0 border-t-0 border-b border-slate-100 shadow-none"
             eyebrow="Új recept"
@@ -67,7 +68,7 @@ export default function NewRecipePage() {
               onDirtyChange={setIsRecipeFormDirty}
             />
           </div>
-        </div>
+        </Card>
       </div>
     </section>
   );

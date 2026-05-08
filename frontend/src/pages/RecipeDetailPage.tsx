@@ -13,6 +13,7 @@ import { RecipeMeta } from "../components/recipe/RecipeMeta";
 import { useState } from "react";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
 
 function formatDateTime(value: string) {
   return new Date(value).toLocaleString("hu-HU", {
@@ -162,7 +163,7 @@ export default function RecipeDetailPage() {
           Vissza a receptekhez
         </Link>
 
-        <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <Card as="article" className="overflow-hidden">
           <PageHeader
             className="rounded-none border-x-0 border-t-0 border-b border-slate-100 shadow-none"
             eyebrow="Recept részletei"
@@ -259,7 +260,7 @@ export default function RecipeDetailPage() {
               <RecipeMeta label="Recept azonosító" value={`#${recipe.id}`} />
             </div>
           </div>
-        </article>
+        </Card>
       </div>
 
       <ConfirmDialog

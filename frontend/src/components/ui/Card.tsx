@@ -1,19 +1,39 @@
 import type { ComponentPropsWithoutRef } from "react";
+
 import { cn } from "../../lib/cn";
 
-export type CardProps = ComponentPropsWithoutRef<"div">;
+type DivCardProps = ComponentPropsWithoutRef<"div"> & {
+  as?: "div";
+};
+
+type ArticleCardProps = ComponentPropsWithoutRef<"article"> & {
+  as: "article";
+};
+
+export type CardProps = DivCardProps | ArticleCardProps;
 export type CardHeaderProps = ComponentPropsWithoutRef<"div">;
 export type CardTitleProps = ComponentPropsWithoutRef<"h2">;
 export type CardContentProps = ComponentPropsWithoutRef<"div">;
 
-export function Card({ className, ...props }: CardProps) {
+const cardBaseClassName =
+  "rounded-3xl border border-(--color-border) bg-(--color-surface) shadow-sm";
+
+export function Card({ as = "div", className, ...props }: CardProps) {
+  const cardClassName = cn(cardBaseClassName, className);
+
+  if (as === "article") {
+    return (
+      <article
+        className={cardClassName}
+        {...(props as ComponentPropsWithoutRef<"article">)}
+      />
+    );
+  }
+
   return (
     <div
-      className={cn(
-        "rounded-3xl border border-(--color-border) bg-(--color-surface) shadow-sm",
-        className,
-      )}
-      {...props}
+      className={cardClassName}
+      {...(props as ComponentPropsWithoutRef<"div">)}
     />
   );
 }

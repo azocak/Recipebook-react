@@ -26,6 +26,18 @@ describe("Card", () => {
 
     expect(screen.getByTestId("card").className).toContain("max-w-2xl");
   });
+
+  it("can render as an article element", () => {
+    render(
+      <Card as="article" aria-label="Recept kártya">
+        Palacsinta
+      </Card>,
+    );
+
+    expect(
+      screen.getByRole("article", { name: "Recept kártya" }),
+    ).toBeInTheDocument();
+  });
 });
 
 describe("Card subcomponents", () => {

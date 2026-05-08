@@ -15,6 +15,7 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { RecipeMeta } from "../components/recipe/RecipeMeta";
 import { useState } from "react";
 import { useBeforeUnloadWarning } from "../hooks/useBeforeUnloadWarning";
+import { Card } from "../components/ui/Card";
 
 function EditRecipePageSkeleton() {
   return (
@@ -25,7 +26,7 @@ function EditRecipePageSkeleton() {
       <div className="space-y-6">
         <Skeleton className="h-5 w-40 rounded-full" />
 
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <Card className="overflow-hidden">
           <div className="border-b border-slate-100 bg-orange-50/70 px-6 py-6 sm:px-8">
             <div className="mx-auto max-w-2xl space-y-4 text-center">
               <Skeleton className="mx-auto h-4 w-32 rounded-full" />
@@ -82,7 +83,7 @@ function EditRecipePageSkeleton() {
               </div>
             </div>
           </div>
-        </div>
+        </Card>
       </div>
     </section>
   );
@@ -168,7 +169,7 @@ export default function EditRecipePage() {
           Vissza a recepthez
         </Link>
 
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <Card className="overflow-hidden">
           <PageHeader
             className="rounded-none border-x-0 border-t-0 border-b border-slate-100 shadow-none"
             eyebrow="Szerkesztő mód"
@@ -192,7 +193,7 @@ export default function EditRecipePage() {
               onDirtyChange={setIsRecipeFormDirty}
             />
           </div>
-        </div>
+        </Card>
       </div>
     </section>
   );

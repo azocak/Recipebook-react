@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Card } from "../ui/Card";
 
 type AuthLayoutProps = {
   title: string;
@@ -15,7 +16,7 @@ export function AuthLayout({
 }: AuthLayoutProps) {
   return (
     <section className="mx-auto flex min-h-[calc(100vh-12rem)] max-w-6xl items-start justify-center px-4 py-8 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <Card className="w-full max-w-md p-6 sm:p-8">
         <div className="mb-6 space-y-2 text-center">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">
             {title}
@@ -32,7 +33,7 @@ export function AuthLayout({
             {footer}
           </div>
         ) : null}
-      </div>
+      </Card>
     </section>
   );
 }

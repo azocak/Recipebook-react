@@ -8,6 +8,7 @@ import { getApiErrorMessage } from "../utils/getApiErrorMessage";
 import { RecipeImageBlock } from "./recipe/RecipeImageBlock";
 import { ConfirmDialog } from "./ui/ConfirmDialog";
 import { Button } from "./ui/Button";
+import { Card } from "./ui/Card";
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -68,7 +69,10 @@ function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
   }
 
   return (
-    <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-md">
+    <Card
+      as="article"
+      className="overflow-hidden transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-md"
+    >
       <Link
         to={`/recipes/${recipe.id}`}
         className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
@@ -187,7 +191,7 @@ function RecipeCard({ recipe, onDeleteSuccess }: RecipeCardProps) {
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
       />
-    </article>
+    </Card>
   );
 }
 

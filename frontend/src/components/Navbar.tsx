@@ -80,7 +80,7 @@ export function Navbar() {
             </NavLink>
           </div>
 
-          <div className="flex flex-col gap-3 md:items-end">
+          <div className="flex gap-3 md:items-end">
             <nav
               className="flex flex-wrap items-center gap-2"
               aria-label="Fő navigáció"
