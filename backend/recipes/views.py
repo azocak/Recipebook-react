@@ -178,6 +178,97 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
+    @extend_schema(
+        tags=["Recipes"],
+        summary="Recept részleteinek lekérése",
+        description=(
+            "Egy recept részletes adatainak lekérése azonosító alapján. "
+            "A válasz tartalmazza a recept szöveges adatait, metaadatait, "
+            "tulajdonosi információját és a kép URL-jét, ha van feltöltött kép."
+        ),
+        responses={
+            200: RecipeSerializer,
+            404: OpenApiResponse(description="A recept nem található."),
+        },
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+
+    @extend_schema(
+        tags=["Recipes"],
+        summary="Új recept létrehozása",
+        description=(
+            "Új recept létrehozása bejelentkezett felhasználóként. "
+            "A végpont multipart/form-data kérést is elfogad, ezért opcionálisan "
+            "kép is feltölthető az `image` mezőben. A backend a bejelentkezett "
+            "felhasználót állítja be tulajdonosként."
+        ),
+        request=RecipeSerializer,
+        responses={
+            201: RecipeSerializer,
+            400: OpenApiResponse(description="Validációs hiba."),
+            403: OpenApiResponse(description="Hitelesítés vagy jogosultság szükséges."),
+        },
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    @extend_schema(
+        tags=["Recipes"],
+        summary="Recept teljes frissítése",
+        description=(
+            "Meglévő recept teljes frissítése. Csak a recept tulajdonosa "
+            "módosíthatja az adatokat. Multipart/form-data kérés esetén az "
+            "`image` mezővel kép cserélhető, a `remove_image` mezővel pedig "
+            "a meglévő kép törlése kérhető."
+        ),
+        request=RecipeSerializer,
+        responses={
+            200: RecipeSerializer,
+            400: OpenApiResponse(description="Validációs hiba."),
+            403: OpenApiResponse(description="Nincs jogosultság a módosításhoz."),
+            404: OpenApiResponse(description="A recept nem található."),
+        },
+    )
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    @extend_schema(
+        tags=["Recipes"],
+        summary="Recept részleges frissítése",
+        description=(
+            "Meglévő recept részleges frissítése. Csak a recept tulajdonosa "
+            "módosíthatja az adatokat. Multipart/form-data kérés esetén az "
+            "`image` mezővel kép cserélhető, a `remove_image` mezővel pedig "
+            "a meglévő kép törlése kérhető."
+        ),
+        request=RecipeSerializer,
+        responses={
+            200: RecipeSerializer,
+            400: OpenApiResponse(description="Validációs hiba."),
+            403: OpenApiResponse(description="Nincs jogosultság a módosításhoz."),
+            404: OpenApiResponse(description="A recept nem található."),
+        },
+    )
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
+    @extend_schema(
+        tags=["Recipes"],
+        summary="Recept törlése",
+        description=(
+            "Meglévő recept törlése. Csak a recept tulajdonosa törölheti "
+            "az erőforrást."
+        ),
+        responses={
+            204: OpenApiResponse(description="A recept sikeresen törölve."),
+            403: OpenApiResponse(description="Nincs jogosultság a törléshez."),
+            404: OpenApiResponse(description="A recept nem található."),
+        },
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
+
     def get_queryset(self):
         return Recipe.objects.select_related("owner").order_by("-created_at")
 
