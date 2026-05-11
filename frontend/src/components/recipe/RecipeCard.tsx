@@ -1,15 +1,14 @@
 import { useState, type MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import type { Recipe } from "../api/types";
-import { useAuth } from "../auth/AuthContext";
-import { useDeleteRecipeMutation } from "../hooks/mutations/useDeleteRecipeMutation";
-import { getApiErrorMessage } from "../utils/getApiErrorMessage";
-import { RecipeImageBlock } from "./recipe/RecipeImageBlock";
-import { ConfirmDialog } from "./ui/ConfirmDialog";
-import { Button } from "./ui/Button";
-import { Card } from "./ui/Card";
-
+import type { Recipe } from "../../api/types";
+import { useAuth } from "../../auth/AuthContext";
+import { useDeleteRecipeMutation } from "../../hooks/mutations/useDeleteRecipeMutation";
+import { getApiErrorMessage } from "../../utils/getApiErrorMessage";
+import { RecipeImageBlock } from "./RecipeImageBlock";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
+import { Button } from "../ui/Button";
+import { Card } from "../ui/Card";
 interface RecipeCardProps {
   recipe: Recipe;
   onDeleteSuccess?: (deletedRecipeId: number) => void;

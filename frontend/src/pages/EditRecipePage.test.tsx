@@ -45,7 +45,7 @@ vi.mock("../hooks/useBeforeUnloadWarning", () => ({
     mockUseBeforeUnloadWarning(shouldWarn),
 }));
 
-vi.mock("../components/RecipeForm", () => ({
+vi.mock("../components/recipe/RecipeForm", () => ({
   default: ({
     initialValues,
     initialImageUrl,

@@ -2,7 +2,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 import type { RecipeFormData, RecipeImageFormData } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
-import RecipeForm from "../components/RecipeForm";
+import RecipeForm from "../components/recipe/RecipeForm";
 import { useRecipeQuery } from "../hooks/queries/useRecipeQuery";
 
 import { useUpdateRecipeMutation } from "../hooks/mutations/useUpdateRecipeMutation";

@@ -34,7 +34,7 @@ vi.mock("../api/recipes", () => ({
   },
 }));
 
-vi.mock("../components/RecipeCard", () => ({
+vi.mock("../components/recipe/RecipeCard", () => ({
   default: ({
     recipe,
     onDeleteSuccess,

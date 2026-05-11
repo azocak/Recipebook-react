@@ -4,10 +4,10 @@ import {
   useNavigate,
   type NavLinkRenderProps,
 } from "react-router-dom";
-import { useAuth } from "../auth/AuthContext.tsx";
+import { useAuth } from "../../auth/AuthContext.tsx";
 import { useMemo, useState } from "react";
-import { getApiErrorMessage } from "../utils/getApiErrorMessage.ts";
-import { Button } from "./ui/Button.tsx";
+import { getApiErrorMessage } from "../../utils/getApiErrorMessage.ts";
+import { Button } from "../ui/Button.tsx";
 
 function getNavLinkClassname({ isActive }: NavLinkRenderProps) {
   return [

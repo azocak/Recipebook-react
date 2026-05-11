@@ -8,7 +8,7 @@ import type {
   RecipeOrdering,
 } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
-import RecipeCard from "../components/RecipeCard";
+import RecipeCard from "../components/recipe/RecipeCard";
 import { EmptyState } from "../components/ui/EmptyState";
 import { ErrorState } from "../components/ui/ErrorState";
 import { useRecipesQuery } from "../hooks/queries/useRecipesQuery";

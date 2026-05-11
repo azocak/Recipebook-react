@@ -3,7 +3,7 @@ import RecipesPage from "../pages/RecipesPage.tsx";
 
 import { RegisterPage } from "../pages/RegisterPage.tsx";
 import { LoginPage } from "../pages/LoginPage.tsx";
-import { AppLayout } from "../components/AppLayout.tsx";
+import { AppLayout } from "../components/layout/AppLayout.tsx";
 import { GuestOnlyRoute } from "../auth/GuestOnlyRoute.tsx";
 import { ProtectedRoute } from "../auth/ProtectedRoute.tsx";
 import NewRecipePage from "../pages/NewRecipePage.tsx";

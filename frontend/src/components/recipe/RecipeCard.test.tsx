@@ -3,14 +3,14 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
-import { ApiError } from "../api/errors";
-import { recipesApi } from "../api/recipes";
-import type { Recipe } from "../api/types";
-import { useAuth } from "../auth/AuthContext";
-import { queryKeys } from "../lib/queryKeys";
-import { setAuthenticatedUser, setGuestAuth } from "../test/auth-fixtures";
-import { createTestQueryClient } from "../test/queryClient";
-import { mockRecipe } from "../test/recipe-fixtures";
+import { ApiError } from "../../api/errors";
+import { recipesApi } from "../../api/recipes";
+import type { Recipe } from "../../api/types";
+import { useAuth } from "../../auth/AuthContext";
+import { queryKeys } from "../../lib/queryKeys";
+import { setAuthenticatedUser, setGuestAuth } from "../../test/auth-fixtures";
+import { createTestQueryClient } from "../../test/queryClient";
+import { mockRecipe } from "../../test/recipe-fixtures";
 import RecipeCard from "./RecipeCard";
 
 const mockNavigate = vi.fn();
@@ -30,11 +30,11 @@ vi.mock("react-router-dom", async () => {
   };
 });
 
-vi.mock("../auth/AuthContext", () => ({
+vi.mock("../../auth/AuthContext", () => ({
   useAuth: vi.fn(),
 }));
 
-vi.mock("../api/recipes", () => ({
+vi.mock("../../api/recipes", () => ({
   recipesApi: {
     remove: vi.fn(),
   },

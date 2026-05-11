@@ -6,17 +6,17 @@ import {
   setGuestAuth,
   setMockAuthState,
   type MockUseAuth,
-} from "../test/auth-fixtures";
+} from "../../test/auth-fixtures";
 
 const mockUseAuth = vi.fn();
 const mockNavigate = vi.fn();
 const mockGetApiErrorMessage = vi.fn();
 
-vi.mock("../auth/AuthContext", () => ({
+vi.mock("../../auth/AuthContext", () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-vi.mock("../utils/getApiErrorMessage", () => ({
+vi.mock("../../utils/getApiErrorMessage", () => ({
   getApiErrorMessage: (error: unknown, fallbackMessage: string) =>
     mockGetApiErrorMessage(error, fallbackMessage),
 }));

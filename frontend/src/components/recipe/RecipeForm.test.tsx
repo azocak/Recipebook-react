@@ -1,8 +1,8 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import type { RecipeFormData, RecipeImageFormData } from "../api/types";
-import { ApiError } from "../api/errors";
+import type { RecipeFormData, RecipeImageFormData } from "../../api/types";
+import { ApiError } from "../../api/errors";
 import RecipeForm from "./RecipeForm";
 
 const validData: RecipeFormData = {

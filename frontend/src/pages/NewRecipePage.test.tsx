@@ -46,7 +46,7 @@ vi.mock("../api/recipes", () => ({
   },
 }));
 
-vi.mock("../components/RecipeForm", () => ({
+vi.mock("../components/recipe/RecipeForm", () => ({
   default: ({
     initialValues,
     initialImageUrl,

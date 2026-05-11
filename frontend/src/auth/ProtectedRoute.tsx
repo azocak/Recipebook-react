@@ -1,7 +1,8 @@
 import type { ReactElement } from "react";
 import { Navigate, useLocation } from "react-router-dom";
+
+import { AuthRouteStatus } from "./AuthRouteStatus";
 import { useAuth } from "./AuthContext";
-import { PageStatus } from "../components/PageStatus";
 
 interface ProtectedRouteProps {
   children: ReactElement;
@@ -13,7 +14,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (loading) {
     return (
-      <PageStatus
+      <AuthRouteStatus
         title="Ellenőrzés folyamatban..."
         description="Megnézzük, hogy be vagy-e jelentkezve."
       />

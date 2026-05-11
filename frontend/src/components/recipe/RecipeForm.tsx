@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 
-import type { RecipeFormData, RecipeImageFormData } from "../api/types";
+import type { RecipeFormData, RecipeImageFormData } from "../../api/types";
 
 import {
   RECIPE_ACCEPTED_IMAGE_EXTENSIONS,
@@ -8,23 +8,23 @@ import {
   RECIPE_ALLOWED_ERROR_FIELDS,
   RECIPE_IMAGE_MAX_SIZE,
   RECIPE_VALIDATION_ERRORS,
-} from "../constants/recipe";
+} from "../../constants/recipe";
 import {
   getRecipeFormInitialState,
   type RecipeFormState,
-} from "../forms/getRecipeFormInitialState";
+} from "../../forms/getRecipeFormInitialState";
 import { useForm, useWatch } from "react-hook-form";
 import {
   recipeSchema,
   type RecipeSchemaInputValues,
   type RecipeSchemaValues,
-} from "../schemas/recipe";
+} from "../../schemas/recipe";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { applyApiErrorsToForm } from "../forms/apiErrorAdapter";
-import { RecipeFormImageSection } from "./recipe/RecipeFormImageSection";
-import { RecipeFormContentSection } from "./recipe/RecipeFormContentSection";
-import { RecipeFormBasicsSection } from "./recipe/RecipeFormBasicsSection";
-import { RecipeFormActions } from "./recipe/RecipeFormActions";
+import { applyApiErrorsToForm } from "../../forms/apiErrorAdapter";
+import { RecipeFormImageSection } from "./RecipeFormImageSection";
+import { RecipeFormContentSection } from "./RecipeFormContentSection";
+import { RecipeFormBasicsSection } from "./RecipeFormBasicsSection";
+import { RecipeFormActions } from "./RecipeFormActions";
 
 type RecipeFormProps = {
   initialValues: RecipeFormData;
