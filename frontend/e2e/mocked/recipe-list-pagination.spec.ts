@@ -4,8 +4,8 @@ import {
   isApiPath,
   mockGuestSession,
   paginatedRecipeListResponse,
-} from "./helpers/apiMocks";
-import { createRecipe, type E2ERecipe } from "./helpers/testData";
+} from "../helpers/apiMocks";
+import { createRecipe, type E2ERecipe } from "../helpers/testData";
 
 test("navigates to the second recipe list page and keeps the page param in the URL", async ({
   page,

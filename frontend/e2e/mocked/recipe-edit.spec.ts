@@ -3,7 +3,7 @@ import {
   isRecipeDetailApiPath,
   mockAuthenticatedUser,
   mockCsrfEndpoint,
-} from "./helpers/apiMocks";
+} from "../helpers/apiMocks";
 
 test("edits an existing recipe and redirects to the updated recipe detail page", async ({
   page,

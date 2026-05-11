@@ -4,8 +4,8 @@ import {
   isApiPath,
   mockGuestSession,
   paginatedRecipeListResponse,
-} from "./helpers/apiMocks";
-import { createRecipe } from "./helpers/testData";
+} from "../helpers/apiMocks";
+import { createRecipe } from "../helpers/testData";
 
 test("filters the recipe list by search query and keeps the search param in the URL", async ({
   page,

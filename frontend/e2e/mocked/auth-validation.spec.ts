@@ -4,7 +4,7 @@ import {
   mockCsrfEndpoint,
   mockEmptyRecipeList,
   mockGuestSession,
-} from "./helpers/apiMocks";
+} from "../helpers/apiMocks";
 
 test("shows a validation error when the register password confirmation does not match", async ({
   page,

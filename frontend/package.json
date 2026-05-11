@@ -12,9 +12,11 @@
     "test:run": "vitest run",
     "test:ui": "vitest --ui",
     "coverage": "vitest run --coverage",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e": "npm run test:e2e:mocked",
+    "test:e2e:mocked": "playwright test e2e/mocked",
+    "test:e2e:fullstack": "playwright test e2e/fullstack --pass-with-no-tests",
+    "test:e2e:ui": "playwright test e2e/mocked --ui",
+    "test:e2e:headed": "playwright test e2e/mocked --headed"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

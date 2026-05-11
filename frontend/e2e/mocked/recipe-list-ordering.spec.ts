@@ -4,8 +4,8 @@ import {
   isApiPath,
   mockGuestSession,
   paginatedRecipeListResponse,
-} from "./helpers/apiMocks";
-import { createRecipe } from "./helpers/testData";
+} from "../helpers/apiMocks";
+import { createRecipe } from "../helpers/testData";
 
 test("orders the recipe list by title and keeps the ordering param in the URL", async ({
   page,
