@@ -3,6 +3,7 @@ from django.contrib.auth.password_validation import (
     validate_password as django_validate_password,
 )
 from django.core.exceptions import ValidationError as DjangoValidationError
+from drf_spectacular.utils import extend_schema_field
 from PIL import Image, UnidentifiedImageError
 from rest_framework import serializers
 
@@ -207,6 +208,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             }
         }
 
+    @extend_schema_field(str)
     def get_image_url(self, obj):
         if not obj.image:
             return None
