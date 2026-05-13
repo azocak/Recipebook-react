@@ -65,3 +65,7 @@ vite.svg
 # -----------------------------
 .DS_Store
 Thumbs.db
+
+# Docker local env
+.env.docker
+.env.docker.local
