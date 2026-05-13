@@ -4,7 +4,7 @@ import {
   mockAuthenticatedUser,
   mockCsrfEndpoint,
   mockEmptyRecipeList,
-} from "./helpers/apiMocks";
+} from "../helpers/apiMocks";
 
 test("deletes an existing recipe from the detail page and redirects to the recipe list", async ({
   page,

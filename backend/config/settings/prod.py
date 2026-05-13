@@ -3,10 +3,10 @@ from django.core.exceptions import ImproperlyConfigured
 from .base import *  # noqa: F403
 from .base import BASE_DIR, env, env_bool, env_list
 
-SECRET_KEY = env("SECRET_KEY", required=True)
-DEBUG = False
+SECRET_KEY = env("DJANGO_SECRET_KEY", env("SECRET_KEY", ""), required=True)
+DEBUG = env_bool("DJANGO_DEBUG", False)
 
-ALLOWED_HOSTS = env_list("ALLOWED_HOSTS")
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", env("ALLOWED_HOSTS", ""))
 if not ALLOWED_HOSTS:
     raise ImproperlyConfigured("ALLOWED_HOSTS must not be empty in production.")
 
@@ -30,7 +30,10 @@ DATABASES = {
 }
 
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
-CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
+CSRF_TRUSTED_ORIGINS = env_list(
+    "DJANGO_CSRF_TRUSTED_ORIGINS",
+    env("CSRF_TRUSTED_ORIGINS", ""),
+)
 CORS_ALLOW_CREDENTIALS = True
 
 SESSION_COOKIE_SAMESITE = env("SESSION_COOKIE_SAMESITE", "Lax")

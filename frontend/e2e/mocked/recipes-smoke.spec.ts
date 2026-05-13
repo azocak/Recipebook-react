@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { mockEmptyRecipeList, mockGuestSession } from "./helpers/apiMocks";
+import { mockEmptyRecipeList, mockGuestSession } from "../helpers/apiMocks";
 
 test("renders the recipe list page with mocked API data", async ({ page }) => {
   await mockGuestSession(page);

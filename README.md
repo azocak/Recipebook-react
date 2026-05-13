@@ -282,6 +282,25 @@ Ha egy recepthez nincs feltöltött kép, akkor a felület semleges szürke plac
 - részletes nézetben nagyobb blokkban
 - szerkesztő nézetben a jelenlegi állapot egyértelmű visszajelzésével
 
+## Docker Compose backend smoke
+
+A projekt tartalmaz egy első Docker Compose alapú backend smoke setupot.
+
+Ez jelenleg csak az alábbi service-eket indítja:
+
+- PostgreSQL adatbázis
+- Django backend API
+
+A frontend konténer még nem része ennek az első Docker Compose lépésnek.
+
+### Indítás
+
+A projekt gyökeréből:
+
+````bash
+docker compose up --build
+
+
 ## Tesztek futtatása
 
 ### Backend
@@ -291,7 +310,7 @@ Ha egy recepthez nincs feltöltött kép, akkor a felület semleges szürke plac
 ```bash
 cd backend
 python manage.py test
-```
+````
 
 Célzott futtatás:
 

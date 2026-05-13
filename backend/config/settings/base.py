@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     # Third-party
     "rest_framework",
     "corsheaders",
+    "drf_spectacular",
     # Local apps
     "recipes",
 ]
@@ -60,6 +61,16 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
     ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Recipebook API",
+    "DESCRIPTION": (
+        "OpenAPI dokumentáció a Recipebook alkalmazás auth és recipe " "végpontjaihoz."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
 }
 
 ROOT_URLCONF = "config.urls"

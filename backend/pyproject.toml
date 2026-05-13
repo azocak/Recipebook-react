@@ -1,16 +1,26 @@
 [tool.black]
 line-length = 88
 target-version = ["py312"]
-exclude = '''
+extend-exclude = '''
 /(
-    migrations
+    \.venv
+  | venv
+  | env
+  | migrations
+  | __pycache__
 )/
 '''
 
 [tool.ruff]
 line-length = 88
 target-version = "py312"
-exclude = ["migrations"]
+exclude = [
+    ".venv",
+    "venv",
+    "env",
+    "migrations",
+    "__pycache__",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
