@@ -74,7 +74,7 @@ export function Navbar() {
                   Receptkönyv
                 </span>
                 <span className="block text-sm text-slate-600">
-                  Oszd meg kedvenc receptjeidet.
+                  Találd meg kedvenc receptjeidet.
                 </span>
               </span>
             </NavLink>

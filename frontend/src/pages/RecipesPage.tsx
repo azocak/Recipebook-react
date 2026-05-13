@@ -308,7 +308,7 @@ function RecipesPage() {
         <PageHeader
           eyebrow="Publikus receptgyűjtemény"
           title="Receptkönyv"
-          description="Böngészd a közösség receptjeit, nézd meg a részleteket, és oszd meg a kedvenceidet."
+          description="Böngészd a közösség receptjeit, nézd meg a részleteket, és találd meg a kedvenceidet."
           meta={
             <>
               <RecipeMeta
